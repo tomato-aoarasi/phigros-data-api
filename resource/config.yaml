@@ -1,0 +1,19 @@
+log:
+  logger-name: daily_logger
+  filename: logs/daily.txt
+  hour: 2
+  minute: 30
+db:
+  path: 
+    local: ./localDB.db
+    phi: ./PhigrosInfo.db
+server:
+  redis:
+    ip: "127.0.0.1"
+    port: 6379
+    password: "bkhra571"
+  concurrency: 0
+  port: 8299
+  token:
+     secret: HWqBXLYj8$z$ezR9gnihO8K13m#soNN^8WWuHMKDz12Vo6IWb3e6N!M4aHV@tCF3
+     issuer: Bing
