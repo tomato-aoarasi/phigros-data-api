@@ -22,12 +22,13 @@
 #include <cmath>
 #include "httplib.h"
 #include <miniz.h>
+#include "configuration/config.hpp"
+#include "common/utils/other_util.hpp"
 #include <cryptopp/cryptlib.h>
-#include <configuration/config.hpp>
 
 using ubyte = unsigned char;
 
-#define DEBUG 1
+#if DEBUG
 void HexDebug(const auto& content) {
 	for (const auto& data : content)
 	{
@@ -35,9 +36,6 @@ void HexDebug(const auto& content) {
 	};
 	std::cout << std::endl;
 }
-
-#if DEBUG
-
 #endif // DEBUG
 
 
@@ -92,6 +90,10 @@ namespace self {
 			std::string str(reinterpret_cast<const char*>(&data_[pos_]), strLength);
 			pos_ += strLength;
 			return str;
+		}
+
+		const auto& getPosition() const {
+			return this->pos_;
 		}
 
 		bool getBit(uint8_t data, uint8_t index) {
@@ -214,6 +216,7 @@ namespace self {
 			{"Content-Type", "application/json"}
 		};
 
+		// 曲目id/难度(0/1/2/3/4)/信息
 		std::unordered_map<std::string, std::unordered_map<ubyte, SongScore>> m_player_record{};
 
 		std::string
@@ -231,32 +234,79 @@ namespace self {
 			IV_BASE64{ "Kk/wisgNYwcAV8WVGMgyUw==" };
 
 		void getGameRecord(std::vector<ubyte>& data) {
-			BinaryReader reader(data);
-			auto songcount{ reader.ReadByte() };
-			auto fc{ reader.ReadByte() };
-
+			size_t data_size{ data.size() };
 			std::unordered_map<std::string, std::unordered_map<ubyte, SongScore>> records;
-			for (size_t i = 0; i < songcount; ++i) {
-				std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
-				auto songid{ reader.ReadStr() };
-				auto length{ reader.ReadByte() };
-				auto diffs{ reader.ReadByte() };
-				fc = reader.ReadByte();
 
+			try{
+				BinaryReader reader(data);
+				auto songcount{ reader.ReadByte() };
+				auto fc{ reader.ReadByte() };
 
-				std::unordered_map<ubyte, SongScore> record;
-				for (size_t j = 0; j < 5; ++j) {
-					if (reader.getBit(diffs, j)) {
-						SongScore song_score;
-						song_score.score = reader.ReadInt32();
-						song_score.acc = reader.ReadSingle();
-						song_score.is_fc = reader.getBit(fc, j);
-						song_score.difficulty = levels[j];
-						record[j] = std::move(song_score);
+				for (size_t i = 0; i < songcount; ++i) {
+					const std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
+					auto songid{ reader.ReadStr() };
+					auto length{ reader.ReadByte() };
+					auto diffs{ reader.ReadByte() };
+					fc = reader.ReadByte();
+
+					//std::cout << songid << "\n";
+
+					std::unordered_map<ubyte, SongScore> record;
+					for (size_t j = 0; j < 5; ++j) {
+						if (reader.getBit(diffs, j)) {
+							SongScore song_score;
+							song_score.score = reader.ReadInt32();
+							song_score.acc = reader.ReadSingle();
+							song_score.is_fc = reader.getBit(fc, j);
+							song_score.difficulty = levels[j];
+							record[j] = std::move(song_score);
+						}
 					}
+
+					if (reader.getPosition() > data_size){
+						records.clear();
+
+						//std::cout << "Binary data read out of bounds\n";
+
+						throw std::out_of_range("Binary data read out of bounds");
+					}
+
+					records[songid] = std::move(record);
 				}
-				records[songid] = std::move(record);
+			}catch (const std::out_of_range& e) {
+				BinaryReader reader(data);
+				auto songcount{ reader.ReadByte() };
+
+				for (size_t i = 0; i < songcount; ++i) {
+					std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
+					auto songid{ reader.ReadStr() };
+					auto length{ reader.ReadByte() };
+					auto diffs{ reader.ReadByte() };
+					auto fc = reader.ReadByte();
+
+
+					std::unordered_map<ubyte, SongScore> record;
+					for (size_t j = 0; j < 5; ++j) {
+						if (reader.getBit(diffs, j)) {
+							SongScore song_score;
+							song_score.score = reader.ReadInt32();
+							song_score.acc = reader.ReadSingle();
+							song_score.is_fc = reader.getBit(fc, j);
+							song_score.difficulty = levels[j];
+							record[j] = std::move(song_score);
+						}
+					}
+
+					if (reader.getPosition() > data_size) {
+						records.clear();
+						throw std::out_of_range("Binary data read out of bounds");
+					}
+
+					records[songid] = std::move(record);
+				}
 			}
+
+			//std::cout << "data size: " << data_size << ",position: " << reader.getPosition() << std::endl;
 			this->m_player_record = std::move(records);
 		}
 	public:
@@ -286,16 +336,22 @@ namespace self {
 			// 获取玩家存档的JSON
 			if (auto res = cli.Get(GAME_SAVE_URI, m_headers)) {
 				if (res->status == 200) {
-					m_game_save_info = Json::parse(res->body);
-					m_game_save_info.swap(m_game_save_info["results"][0]);
+					this->m_game_save_info = Json::parse(res->body);
+					this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
 				}
 			}
 			else {
 				throw HTTPException(httplib::to_string(res.error()), 500);
 			}
 
+			get_player_info_thread.join();
+			if (is_exception)
+			{
+				throw e;
+			}
+
 			std::string
-				save_url{ m_game_save_info["gameFile"]["url"].get<std::string>() },
+				save_url{ this->m_game_save_info["gameFile"]["url"].get<std::string>() },
 				save_domain{},
 				save_uri{};
 
@@ -398,6 +454,7 @@ namespace self {
 						std::vector<ubyte> iv{ OtherUtil::base64Decode(this->IV_BASE64) };
 
 						auto decrypt_data{ OtherUtil::decrypt_AES_CBC(file_data, key, iv) };
+						//HexDebug(decrypt_data);
 						getGameRecord(decrypt_data);
 						break;
 					}
@@ -408,11 +465,7 @@ namespace self {
 				mz_zip_reader_end(&zip_archive);
 				throw HTTPException("Unknown Error", 500);
 			}
-			get_player_info_thread.join();
-			if (is_exception)
-			{
-				throw e;
-			}
+			
 			// 关闭ZIP文件
 			mz_zip_reader_end(&zip_archive);
 		};

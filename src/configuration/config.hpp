@@ -13,11 +13,14 @@
 #include <fstream>
 #include <string>
 #include <filesystem>
+#include "nlohmann/json.hpp"
+#include "common/utils/sql_util.hpp"
 #include "common/exception/self_exception.hpp"
 #include "yaml-cpp/yaml.h"
 #include "crow.h"
 #include "crow/middlewares/cors.h"
 #include "fmt/format.h"
+#include <limits>
 
 
 using namespace std::string_literals;
@@ -30,6 +33,13 @@ namespace std {
 	using fmt::formatter;
 }
 
+struct user {
+	unsigned int sid{ std::numeric_limits<unsigned int>::max() };
+	std::string username{ "" };
+	unsigned int api_calls{ 0 };
+	std::string token{ "" };
+	unsigned char authority{ 0 };
+};
 
 #if CORS_OPEN
 using CrowApplication = crow::App<crow::CORSHandler>;
@@ -37,14 +47,25 @@ using CrowApplication = crow::App<crow::CORSHandler>;
 using CrowApplication = crow::SimpleApp;
 #endif
 
+#define UserData user
 #define CrowApp CrowApplication
 #define Json nlohmann::json
 #define Ubyte ubyte
 
+namespace DefinedStruct{
+	struct PhiSongInfo {
+		std::string sid;
+		int id;
+		std::string title;
+		std::string song_illustration_path;
+		float rating[5]{ 0.0f,0.0f,0.0f,0.0f,0.0f };
+	};
+}
+
 class Global final {
 	friend class Config;
 public:
-
+	inline static std::unordered_map<std::string, DefinedStruct::PhiSongInfo> PhigrosSongInfo{};
 };
 
 class Config final{
@@ -102,6 +123,7 @@ public:
 		Parameter::ms_issuer = getConfig()["server"]["token"]["issuer"].as<std::string>();
 		Parameter::ms_port = getConfig()["server"]["port"].as<ushort>();
 		Parameter::ms_concurrency = getConfig()["server"]["concurrency"].as<ubyte>();
+
 	}
 	//得到一个YAML配置文件
 	static const YAML::Node& getConfig(void) {

@@ -1,7 +1,6 @@
 #include "main.h"
 
-#define DEBUG
-
+//#define DEBUG
 #ifdef DEBUG
 #include <test/bing/test_project.hpp>
 
@@ -10,9 +9,7 @@ int main(int argc, char* argv[]) {
 
     init();
 
-    TestProject::ConnectPhiSQLite();
-    //std::cout << "===============================" << std::endl;
-    //TestProject::OtherTest();
+    TestProject::SongAllData();
 
     std::cout << "\033[44m--*  DEBUG END  *--\033[0m" << std::endl;
     return 0;

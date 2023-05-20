@@ -52,6 +52,27 @@ inline void init(void) {
     Config::initialized();
     LogSystem::initialized();
     SQL_Util::initialized();
+
+    // 初始化phigros
+    SQL_Util::PhiDB << "select sid,id,title,song_illustration_path,rating_ez,rating_hd,rating_in,rating_at,rating_lg from phigros;"
+        >> [&](std::string sid, int id, std::string title, std::string song_illustration_path,
+            float rating_ez, float rating_hd, float rating_in, float rating_at, float rating_lg) {
+                DefinedStruct::PhiSongInfo phi;
+                if (!sid.empty())
+                {
+                    phi.sid = sid;
+                    phi.id = id;
+                    phi.title = title;
+                    phi.song_illustration_path = song_illustration_path;
+                    phi.rating[0] = rating_ez;
+                    phi.rating[1] = rating_hd;
+                    phi.rating[2] = rating_in;
+                    phi.rating[3] = rating_at;
+                    phi.rating[4] = rating_lg;
+
+                    Global::PhigrosSongInfo[sid] = std::move(phi);
+                }
+    };
 }
 
 // 启动项

@@ -46,7 +46,6 @@ struct personalPhiSongInfo{
 	float acc;
 	bool is_fc;
 	unsigned int score;
-
 };
 
 struct PhiSongInfo {
@@ -59,6 +58,26 @@ struct PhiSongInfo {
 
 class TestProject final{
 public:
+	inline static void SongAllData() {
+		// umyckc74rluncpn7mtxkcanxn
+		// yc443mp6cea7xozb3e0kxvvid
+		// qdpliq0laha53lfzfptyimz1j
+		// v6yitajqe20ceim211502r3h0
+		// 496bcu67y7j65oo900f9oznja
+		self::PhiTaptapAPI phiAPI("yc443mp6cea7xozb3e0kxvvid");
+		auto phi{ phiAPI.getPlayerRecord() };
+
+		/*
+		for (const auto& [key, value] : phi) {
+			std::cout << key << std::endl;
+			for (const auto& [key1, val] : value) {
+				std::cout << val.acc << ", " << val.difficulty << ", " << val.score << std::endl;
+			}
+		}
+		*/
+
+	}
+
 	inline static void ConnectPhiSQLite(void) {
 		StartWatch();
 		
@@ -88,14 +107,16 @@ public:
 		StopWatch();
 		StartWatch();
 		unsigned int count{ 0 };
+		
 		/*
 		for (const auto& [key, value] : phis) {
 			++count;
 			std::cout << "[ " << key << " / " << count << " ]  ->  ";
 			std::cout << value.id << ',' << value.title << ',' << value.song_illustration_path
-				<< ',' << value.rating_ez << ',' << value.rating_hd << ',' << value.rating_in << ',' << value.rating_at << ',' << value.rating_lg << '\n';
+				<< ',' << value.rating[0] << ',' << value.rating[1] << ',' << value.rating[2] << ',' << value.rating[3] << ',' << value.rating[4] << '\n';
 		}
 		*/
+
 		std::cout.flush();
 		StopWatch();
 
@@ -104,7 +125,7 @@ public:
 		// yc443mp6cea7xozb3e0kxvvid
 		// qdpliq0laha53lfzfptyimz1j
 		// v6yitajqe20ceim211502r3h0
-		self::PhiTaptapAPI phiAPI("qdpliq0laha53lfzfptyimz1j");
+		self::PhiTaptapAPI phiAPI("yc443mp6cea7xozb3e0kxvvid");
 
 		auto phi{ phiAPI.getPlayerRecord() };
 
@@ -156,7 +177,7 @@ public:
 				}
 				catch (const std::out_of_range e)
 				{
-					//std::cout << "[" << levels[i] << "] No Record\n";
+					std::cout << "[" << levels[i] << "] No Record\n";
 				}
 				catch (const std::exception& e) {
 					std::cout << e.what() << std::endl;
