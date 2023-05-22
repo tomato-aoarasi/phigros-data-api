@@ -207,7 +207,7 @@ public:
 
 		auto records{ phiAPI.getPlayerRecord() };
 
-		auto record{ records[song_id][difficulty] };
+		auto record{ records.at(song_id).at(difficulty) };
 
 		float
 			acc{ record.acc },

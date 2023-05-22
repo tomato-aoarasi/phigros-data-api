@@ -8,8 +8,10 @@
 #define CORS_OPEN  0  
 
 #include "httplib.h"
+#include <unistd.h>
 #include <iostream>
 #include <memory>
+#include <array>
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/daily_file_sink.h"
@@ -47,6 +49,23 @@ namespace std {
 
 #define CROW_ENFORCE_WS_SPEC  
 
+inline void argument_init(int argc, char* argv[], std::string& port, std::string& concurrency, std::string& sid) {
+    const std::array<std::string, 3> param {"--port=","--concurrency=","--sid="};
+
+    for (int i = 0; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg.find(param.at(0)) == 0) {
+            port = arg.substr(param.at(0).size());
+        }
+        if (arg.find(param.at(1)) == 0) {
+            concurrency = arg.substr(param.at(1).size());
+        }
+        if (arg.find(param.at(2)) == 0) {
+            sid = arg.substr(param.at(2).size());
+        }
+    }
+}
+
 //初始化
 inline void init(void) {
     Config::initialized();
@@ -75,13 +94,38 @@ inline void init(void) {
     };
 }
 
+// 将状态存储SQLite
+inline void ProcessInfoSQLInit(unsigned int sid,unsigned int pid, ushort port) {
+    LogSystem::logInfo("存储状态至PhigrosInfo.db");
+    bool is_existe{ false };
+    SQL_Util::LocalDB << "select count(sid) from ProcessInfo where sid = ?;" << sid >> is_existe;
+    if (is_existe) {
+        LogSystem::logInfo(std::format("sid: {} -> 数据清除",sid));
+        SQL_Util::LocalDB << "delete from ProcessInfo where sid = ?" << sid;
+    }
+
+    SQL_Util::LocalDB << "insert into ProcessInfo(sid,pid,port,path) values (?,?,?,?);" // utf16 string
+        << sid
+        << pid
+        << port
+        << Global::ExecutableFilePath;    
+}
+
 // 启动项
-inline void start(void){
+inline void start(std::string_view p, std::string_view c, std::string_view sid){
     const std::string
         secret{ Config::Parameter::getSecret()},
         issuer{ Config::Parameter::getIssuer()};
-    const ushort port{ Config::Parameter::getPort()};
-    const ubyte concurrency{ Config::Parameter::getConcurrency() };
+    unsigned int pid = getpid();
+    const ushort port{ p == "65536" ? Config::Parameter::getPort() : static_cast<ushort>(std::stoul(p.data())) };
+    const ubyte concurrency{ c.empty() ? Config::Parameter::getConcurrency() : static_cast<ubyte>(std::stoul(c.data())) };
+
+    LogSystem::logInfo(std::format("port: {} / concurrency: {} / pid: {}", port, concurrency, pid));
+
+    if (!sid.empty()){
+        ProcessInfoSQLInit(std::stoul(sid.data()), pid, port);
+
+    };
 
     /* =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
 

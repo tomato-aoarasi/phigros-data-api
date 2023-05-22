@@ -16,12 +16,14 @@ int main(int argc, char* argv[]) {
 }
 #endif // DEBUG
 
-
 #ifndef DEBUG
 int main(int argc, char* argv[])
 {
+    Global::ExecutableFilePath = argv[0];
+    std::string port{ "65536" }, concurrency{ "" }, sid{ "" };
+    argument_init(argc, std::move(argv), port, concurrency, sid);
     init();
-    start();
+    start(port, concurrency, sid);
     return 0;
 }
 #endif // !DEBUG

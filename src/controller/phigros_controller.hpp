@@ -150,8 +150,11 @@ public:
 
 
 					return resp;
-				}
-				catch (const self::HTTPException& e) {
+				}catch (const std::out_of_range& e) {
+					LogSystem::logError("[PhigrosAPI]best ------ 不存在的曲目id或难度");
+					resp.write(StatusCodeHandle::getSimpleJsonResult(400, "Invalid songid or level").dump(amount_spaces));
+					resp.code = 400;
+				}catch (const self::HTTPException& e) {
 					if (e.getMessage().empty())
 					{
 						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode()).dump(amount_spaces));
