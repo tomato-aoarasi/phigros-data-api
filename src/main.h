@@ -120,11 +120,10 @@ inline void start(std::string_view p, std::string_view c, std::string_view sid){
     const ushort port{ p == "65536" ? Config::Parameter::getPort() : static_cast<ushort>(std::stoul(p.data())) };
     const ubyte concurrency{ c.empty() ? Config::Parameter::getConcurrency() : static_cast<ubyte>(std::stoul(c.data())) };
 
-    LogSystem::logInfo(std::format("port: {} / concurrency: {} / pid: {}", port, concurrency, pid));
+    LogSystem::logInfo(std::format("[{}] port: {} / concurrency: {} / pid: {}",sid, port, concurrency, pid));
 
     if (!sid.empty()){
         ProcessInfoSQLInit(std::stoul(sid.data()), pid, port);
-
     };
 
     /* =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
