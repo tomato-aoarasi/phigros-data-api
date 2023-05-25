@@ -4,10 +4,10 @@
 
 <h2>怎么编译</h2>
 
-<pre><code>```sh
+<pre><code>
 $ cmake .<br>
 $ make<br>
-```</code></pre>
+</code></pre>
 
 项目最终会生成到<b>bin</b>目录
 
