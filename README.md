@@ -4,9 +4,9 @@
 
 <h2>怎么编译</h2>
 
-> $ cmake .<br>
-
-> $ make<br>
+> 
+$ cmake .<br>
+$ make<br>
 
 项目最终会生成到<b>bin</b>目录
 
