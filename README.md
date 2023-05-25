@@ -4,7 +4,7 @@
 
 <h2>怎么编译</h2>
 
-<pre><code>& mkdir build && cd build
+<pre><code>$ mkdir build && cd build
 $ cmake .<br>
 $ make<br>
 </code></pre>
