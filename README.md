@@ -12,5 +12,5 @@ $ make<br>
 
 <h2>平台</h2>
 <ui>
-<li>linux</li>
+<li>Linux</li>
 </ui>
