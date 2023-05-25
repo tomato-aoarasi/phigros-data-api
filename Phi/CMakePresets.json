@@ -60,7 +60,7 @@
     {
       "name": "linux-release",
       "displayName": "Linux Release",
-
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
       "cacheVariables": {

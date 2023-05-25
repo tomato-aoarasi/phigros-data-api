@@ -96,7 +96,7 @@ inline void init(void) {
 
 // 将状态存储SQLite
 inline void ProcessInfoSQLInit(unsigned int sid,unsigned int pid, ushort port) {
-    LogSystem::logInfo("存储状态至PhigrosInfo.db");
+    LogSystem::logInfo("存储状态至localDB.db");
     bool is_existe{ false };
     SQL_Util::LocalDB << "select count(sid) from ProcessInfo where sid = ?;" << sid >> is_existe;
     if (is_existe) {

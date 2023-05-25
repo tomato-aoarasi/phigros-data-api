@@ -321,26 +321,28 @@ namespace self {
 
 			// 获取玩家自己信息的JSON
 			std::thread get_player_info_thread([&] {
-				if (auto res = cli.Get(ME_URI, m_headers)) {
-					if (res->status == 200) {
-						m_nickname = Json::parse(res->body)["nickname"].get<std::string>();
-					}
-				}
-				else {
+				auto res = cli.Get(ME_URI, m_headers);
+				
+				if (res && res->status == 200) {
+					m_nickname = Json::parse(res->body)["nickname"].get<std::string>();
+				}else if (res.error() != httplib::Error::Success) {
+					is_exception = true;
+					e = HTTPException(httplib::to_string(err), 500);
+				}else {
 					is_exception = true;
 					e = HTTPException(httplib::to_string(res.error()), 500);
 				}
-				}
-			);
+			});
 
 			// 获取玩家存档的JSON
-			if (auto res = cli.Get(GAME_SAVE_URI, m_headers)) {
-				if (res->status == 200) {
-					this->m_game_save_info = Json::parse(res->body);
-					this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
-				}
-			}
-			else {
+			auto res { cli.Get(GAME_SAVE_URI, m_headers) };
+			if (res && res->status == 200) {
+				this->m_game_save_info = Json::parse(res->body);
+				this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
+			}else if (res.error() != httplib::Error::Success) {
+				is_exception = true;
+				e = HTTPException(httplib::to_string(err), 500);
+			}else {
 				throw HTTPException(httplib::to_string(res.error()), 500);
 			}
 
