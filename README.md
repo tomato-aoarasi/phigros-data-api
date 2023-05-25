@@ -3,17 +3,14 @@
 技术支持来自yuhao
 
 <h2>怎么编译</h2>
-<hr>
 
->> $ cmake .<br>
+> $ cmake .<br>
 
->> $ make<br>
+> $ make<br>
 
 项目最终会生成到<b>bin</b>目录
 
 <h2>平台</h2>
-<hr>
-
 <ui>
 <li>linux</li>
 </ui>
