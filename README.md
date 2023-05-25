@@ -1,4 +1,19 @@
-# TomatoCrowPhigrosAPI
-目前来说是phigros的API(代码供参考的API)
+# Tomato Crow Phigros API
+目前来说是phigros的API(代码供参考的API)<br>
+技术支持来自yuhao
 
-项目会生成到bin目录
+<h2>怎么编译</h2>
+<hr>
+
+>> $ cmake .<br>
+
+>> $ make<br>
+
+项目最终会生成到<b>bin</b>目录
+
+<h2>平台</h2>
+<hr>
+
+<ui>
+<li>linux</li>
+</ui>
