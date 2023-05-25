@@ -4,8 +4,7 @@
 
 <h2>怎么编译</h2>
 
-<pre><code>
-$ cmake .<br>
+<pre><code>$ cmake .<br>
 $ make<br>
 </code></pre>
 
