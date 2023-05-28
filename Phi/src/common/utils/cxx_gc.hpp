@@ -6,11 +6,11 @@
  * @Introduce : C++ GC
 */
 
-#ifndef defined(GC_HPP)
-#define GC_HPP  
-
 #include <set>
 #include <map>
+
+#ifndef defined(GC_HPP)
+#define GC_HPP  
 
 // For thread safety  为了线程安全
 //#define THREAD_SAFETY 1

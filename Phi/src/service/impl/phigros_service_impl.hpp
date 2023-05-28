@@ -8,12 +8,12 @@
 
 #pragma once
 
-#ifndef PHIGROS_SERVICE_HPP_IMPL
-#define PHIGROS_SERVICE_HPP_IMPL  
 #include <service/phigros_service.hpp>
 #include <service/impl/phi_taptap_api.hpp>
 #include "configuration/config.hpp"
 
+#ifndef PHIGROS_SERVICE_HPP_IMPL
+#define PHIGROS_SERVICE_HPP_IMPL  
 class PhigrosServiceImpl : public PhigrosService {
 private:
 	struct KeyComparator {

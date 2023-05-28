@@ -8,9 +8,10 @@
 
 #pragma once
 
-#ifndef PREVENT_INJECT_HPP
-#define PREVENT_INJECT_HPP  
 #include <string_view>
+
+#ifndef PREVENT_INJECT_HPP
+#define PREVENT_INJECT_HPP 
 
 namespace self {
     // ºÏ≤ÈSQL

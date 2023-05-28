@@ -8,9 +8,6 @@
 
 #pragma once
 
-#ifndef OTHER_UTIL
-#define OTHER_UTIL  
-
 #include <string>
 #include <string_view>
 #include <vector>
@@ -22,6 +19,9 @@
 #include "configuration/config.hpp"
 #include "crow.h"
 #include "httplib.h"
+
+#ifndef OTHER_UTIL
+#define OTHER_UTIL  
 
 using namespace std::chrono_literals;
 using uchar = unsigned char;

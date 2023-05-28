@@ -1,5 +1,3 @@
-#include "main.h"
-
 //#define DEBUG
 #ifdef DEBUG
 #include <test/bing/test_project.hpp>
@@ -17,6 +15,8 @@ int main(int argc, char* argv[]) {
 #endif // DEBUG
 
 #ifndef DEBUG
+#include "main.h"
+
 int main(int argc, char* argv[])
 {
     Global::ExecutableFilePath = argv[0];
@@ -26,5 +26,6 @@ int main(int argc, char* argv[])
     start(port, concurrency, sid);
     return 0;
 }
+
 #endif // !DEBUG
 

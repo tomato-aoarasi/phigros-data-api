@@ -8,8 +8,6 @@
 
 #pragma once
 
-#ifndef CONFIG_HPP
-#define CONFIG_HPP  
 #include <fstream>
 #include <string>
 #include <filesystem>
@@ -22,6 +20,8 @@
 #include "fmt/format.h"
 #include <limits>
 
+#ifndef CONFIG_HPP
+#define CONFIG_HPP  
 
 using namespace std::string_literals;
 using ubyte = unsigned char;

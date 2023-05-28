@@ -8,14 +8,15 @@
 
 #pragma once
 
-#ifndef ARCAEA_SERVICE_IMPL_HPP 
-#define ARCAEA_SERVICE_IMPL_HPP  
 #include <chrono>
 #include <bcrypt.h>
 #include "service/arcaea_service.hpp"
 #include "common/utils/sql_handle.hpp"
 #include "jwt-cpp/jwt.h"
 #include "common/utils/http_util.hpp"
+
+#ifndef ARCAEA_SERVICE_IMPL_HPP 
+#define ARCAEA_SERVICE_IMPL_HPP  
 
 #define OLD  0  
 

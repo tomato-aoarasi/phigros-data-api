@@ -8,10 +8,8 @@
 
 
 #pragma once
-#define CPPHTTPLIB_OPENSSL_SUPPORT
 
-#ifndef PHI_TAPTAP_API_HPP
-#define PHI_TAPTAP_API_HPP  
+#define CPPHTTPLIB_OPENSSL_SUPPORT
 
 #include <regex>
 #include <cstdint>
@@ -25,6 +23,9 @@
 #include "configuration/config.hpp"
 #include "common/utils/other_util.hpp"
 #include <cryptopp/cryptlib.h>
+
+#ifndef PHI_TAPTAP_API_HPP
+#define PHI_TAPTAP_API_HPP  
 
 using ubyte = unsigned char;
 

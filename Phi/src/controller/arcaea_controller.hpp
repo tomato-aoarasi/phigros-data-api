@@ -7,8 +7,7 @@
 */
 
 #pragma once
-#ifndef ARCAEA_CONTROLLER
-#define ARCAEA_CONTROLLER
+
 #include <future>
 #include <memory>
 #include <string_view>
@@ -21,6 +20,9 @@
 #include <service/impl/arcaea_service_impl.hpp>
 #include <service/arcaea_service.hpp>
 #include <configuration/config.hpp>
+
+#ifndef ARCAEA_CONTROLLER
+#define ARCAEA_CONTROLLER
 
 using json = nlohmann::json;
 using namespace std::chrono;

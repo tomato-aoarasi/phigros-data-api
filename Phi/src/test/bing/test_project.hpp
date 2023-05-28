@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef TEST_PROJECT_HPP
-#define TEST_PROJECT_HPP  
 #include <iostream>
 #include <fstream>
 #include <exception>
@@ -23,6 +21,8 @@
 #include <common/utils/http_util.hpp>
 #include <service/impl/phi_taptap_api.hpp>
 
+#ifndef TEST_PROJECT_HPP
+#define TEST_PROJECT_HPP  
 using namespace std::string_literals;
 
 //#define WARNING_CONTENT  

@@ -4,12 +4,12 @@ log:
   hour: 2
   minute: 30
 db:
-  path: 
+  path:
     local: ./localDB.db
     phi: ./PhigrosInfo.db
 server:
   redis:
-    ip: "127.0.0.1"
+    ip: "127.0.0.2"
     port: 6379
     password: "bkhra571"
   concurrency: 0
@@ -17,3 +17,8 @@ server:
   token:
      secret: HWqBXLYj8$z$ezR9gnihO8K13m#soNN^8WWuHMKDz12Vo6IWb3e6N!M4aHV@tCF3
      issuer: Bing
+other:
+  port: 8299
+  exec-port-min: 8200
+  exec-port-max: 8204
+  unified-threads: 0

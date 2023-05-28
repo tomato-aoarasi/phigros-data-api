@@ -90,10 +90,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src SRC_LIST)
 add_executable (${PROJECT_NAME} ${SRC_LIST})
 
-# 将指定目录文件所有复制到二进制文件目录
-file(GLOB allCopyFiles  "${CMAKE_CURRENT_SOURCE_DIR}/resource/*")
-file(COPY ${allCopyFiles} DESTINATION ${PROJECT_ROOT_NODE}/bin)
-
 #add_subdirectory(openssl)  
 #Poco::Net Poco::JSON Poco::Util
 #target_include_directories(${PROJECT_NAME} private ${QRENCODE_INCLUDE_DIR})

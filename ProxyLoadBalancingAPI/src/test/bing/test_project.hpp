@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef TEST_PROJECT_HPP
-#define TEST_PROJECT_HPP  
 #include <iostream>
 #include <fstream>
 #include <exception>
@@ -10,8 +8,6 @@
 #include <locale>
 #include <codecvt>
 #include <string>
-#include <common/utils/sql_handle.hpp>
-#include "common/utils/other_util.hpp"
 #include <span>
 #include <jwt-cpp/jwt.h>
 #include <sqlite_modern_cpp.h>
@@ -19,9 +15,9 @@
 #include <qrencode.h>
 #include <hiredis/hiredis.h>
 #include <sw/redis++/redis++.h>
-#include <common/utils/http_util.hpp>
-#include <service/impl/phi_taptap_api.hpp>
 
+#ifndef TEST_PROJECT_HPP
+#define TEST_PROJECT_HPP  
 //#define WARNING_CONTENT  
 using _uint64 = unsigned long long int;
 

@@ -9,6 +9,10 @@ set(VCPKG_ROOT "/home/software/vcpkg")
 set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
 CACHE STRING "Vcpkg toolchain file")
 
+# 将指定目录文件所有复制到二进制文件目录
+file(GLOB allCopyFiles  "${CMAKE_CURRENT_SOURCE_DIR}/resource/*")
+file(COPY ${allCopyFiles} DESTINATION ${PROJECT_ROOT_NODE}/bin)
+
 project ("PhigrosCrowAPI")
 
 # 包含子项目。

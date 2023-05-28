@@ -8,14 +8,13 @@
 
 #pragma once
 
-#ifndef LOG_SYSTEM_HPP
-#define LOG_SYSTEM_HPP  
-
-#include <iostream>
-
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/daily_file_sink.h"
 #include "configuration/config.hpp"
+#include <iostream>
+
+#ifndef LOG_SYSTEM_HPP
+#define LOG_SYSTEM_HPP  
 
 
 class LogSystem final {

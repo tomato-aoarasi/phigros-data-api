@@ -8,8 +8,6 @@
 
 #pragma once
 
-#ifndef CONFIG_HPP
-#define CONFIG_HPP  
 #include <fstream>
 #include <string>
 #include <filesystem>
@@ -18,6 +16,8 @@
 #include "fmt/format.h"
 #include <limits>
 
+#ifndef CONFIG_HPP
+#define CONFIG_HPP  
 
 using namespace std::string_literals;
 using ubyte = unsigned char;
@@ -32,6 +32,13 @@ namespace std {
 #define Json nlohmann::json
 #define Ubyte ubyte
 
+struct ProcessInfo {
+	uint32_t p_sid;
+	uint32_t p_pid;
+	uint16_t p_port;
+	std::string p_path;
+};
+
 class Global final {
 	friend class Config;
 private:
@@ -42,7 +49,10 @@ private:
 	Global& operator=(const Global&) = delete;
 	Global& operator=(Global&&) = delete;
 public:
-	
+	inline static std::vector<ProcessInfo> process_info;
+	inline static std::vector<std::thread> exec_list;
+	inline static size_t proxy_count{ 0 };
+	inline static uint64_t cyclic_query_value;
 };
 
 class Config final{
@@ -54,6 +64,8 @@ private:
 	Config& operator=(const Config&) = delete;
 	Config& operator=(Config&&) = delete;
 public:
+	inline static YAML::Node config_yaml{ YAML::LoadFile("./config.yaml")};
+
 	static void initialized(){
 
 	}

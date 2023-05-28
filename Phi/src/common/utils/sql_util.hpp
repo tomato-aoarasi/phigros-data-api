@@ -8,8 +8,6 @@
 
 #pragma once
 
-#ifndef SQL_UTIL_HPP
-#define SQL_UTIL_HPP  
 #include <memory>
 #include <regex>
 #include <filesystem>
@@ -18,6 +16,9 @@
 #include "configuration/config.hpp"
 #include "common/exception/self_exception.hpp"
 #include "sqlite3pp.h"
+
+#ifndef SQL_UTIL_HPP
+#define SQL_UTIL_HPP  
 
 class SQL_Util {
 public:

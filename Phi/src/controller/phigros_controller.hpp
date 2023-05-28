@@ -7,11 +7,11 @@
 */
 #pragma once
 
-#ifndef PHIGROS_CONTROLLER_HPP
-#define PHIGROS_CONTROLLER_HPP  
 #include <configuration/config.hpp>
 #include <service/phigros_service.hpp>
 
+#ifndef PHIGROS_CONTROLLER_HPP
+#define PHIGROS_CONTROLLER_HPP  
 constexpr int amount_spaces{ 2 };
 //TODO 待补全
 class PhigrosController {
