@@ -144,7 +144,7 @@ namespace self {
 					size_t i = 0;
 					size_t j = 0;
 					int in_ = 0;
-					uint8_t char_array_4[4], char_array_3[3];
+					uint8_t char_array_4[4]{}, char_array_3[3]{};
 					std::vector<uint8_t> ret;
 
 					while (in_len-- && (encoded_string[in_] != '=') && (isalnum(encoded_string[in_]) || encoded_string[in_] == '+'
@@ -201,7 +201,7 @@ namespace self {
 				std::istringstream ss(UpdateTime);
 				ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
 				std::time_t t = std::mktime(&tm);
-				t += 8 * 3600;
+				t += 8L * 3600;
 				tm = *std::gmtime(&t);
 				char buffer[80];
 				std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", &tm);
@@ -228,7 +228,7 @@ namespace self {
 		Json m_player_info, m_game_save_info;
 
 		inline static const std::string
-			URL{ "https://phigrosserver.pigeongames.cn" },
+			URL{ Config::getConfig()["server"]["data-url"].as<std::string>() },
 			GAME_SAVE_URI{ "/1.1/classes/_GameSave" },
 			ME_URI{ "/1.1/users/me" },
 			KEY_BASE64{ "6Jaa0qVAJZuXkZCLiOa/Ax5tIZVu+taKUN1V1nqwkks=" },
@@ -317,8 +317,8 @@ namespace self {
 			m_headers.insert({ "X-LC-Session", sessionToken.data() });
 			httplib::Client cli(URL);
 
-			bool is_exception{ false };
-			HTTPException e;
+			bool is_exception_1{ false }, is_exception_2{ false };
+			HTTPException e1, e2;
 
 			// 获取玩家自己信息的JSON
 			std::thread get_player_info_thread([&] {
@@ -326,12 +326,16 @@ namespace self {
 				
 				if (res && res->status == 200) {
 					m_nickname = Json::parse(res->body)["nickname"].get<std::string>();
+				}
+				else if(res->status < 500 && res->status >= 400){
+					is_exception_1 = true;
+					e1 = HTTPException("", res->status);
 				}else if (res.error() != httplib::Error::Success) {
-					is_exception = true;
-					e = HTTPException(httplib::to_string(err), 500);
+					is_exception_1 = true;
+					e1 = HTTPException(httplib::to_string(err), 500);
 				}else {
-					is_exception = true;
-					e = HTTPException(httplib::to_string(res.error()), 500);
+					is_exception_1 = true;
+					e1 = HTTPException(httplib::to_string(res.error()), 500);
 				}
 			});
 
@@ -341,16 +345,19 @@ namespace self {
 				this->m_game_save_info = Json::parse(res->body);
 				this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
 			}else if (res.error() != httplib::Error::Success) {
-				is_exception = true;
-				e = HTTPException(httplib::to_string(err), 500);
+				is_exception_2 = true;
+				e2 = HTTPException(httplib::to_string(err), 500);
 			}else {
 				throw HTTPException(httplib::to_string(res.error()), 500);
 			}
 
 			get_player_info_thread.join();
-			if (is_exception)
+			if (is_exception_1)
 			{
-				throw e;
+				throw e1;
+			}
+			else if (is_exception_2) {
+				throw e2;
 			}
 
 			std::string

@@ -69,6 +69,12 @@ public:
 				// v6yitajqe20ceim211502r3h0
 				// 496bcu67y7j65oo900f9oznja
 				std::string sessionToken{ req.get_header_value("SessionToken") };
+
+				if (sessionToken.empty())
+				{
+					throw self::HTTPException("SessionToken is empty.", 401);
+				}
+
 				// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
 				auto authentication{ getUser(req.get_header_value("Authorization")) };
 				if (authentication.authority == 0)
@@ -125,6 +131,12 @@ public:
 					// v6yitajqe20ceim211502r3h0
 					// 496bcu67y7j65oo900f9oznja
 					std::string sessionToken{ req.get_header_value("SessionToken") };
+
+					if (sessionToken.empty())
+					{
+						throw self::HTTPException("SessionToken is empty.", 401);
+					}
+
 					// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
 					auto authentication{ getUser(req.get_header_value("Authorization")) };
 					if (authentication.authority == 0)

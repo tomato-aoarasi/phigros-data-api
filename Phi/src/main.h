@@ -162,9 +162,9 @@ inline void start(std::string_view p, std::string_view c, std::string_view sid){
     // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
     if (concurrency != 0)
-        app.concurrency(concurrency).run();
+        app.concurrency(concurrency).run_async();
     else
-        app.multithreaded().run();
+        app.multithreaded().run_async();
 }
 
 #endif

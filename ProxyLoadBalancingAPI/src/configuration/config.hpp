@@ -39,22 +39,6 @@ struct ProcessInfo {
 	std::string p_path;
 };
 
-class Global final {
-	friend class Config;
-private:
-	Global() = delete;
-	~Global() = delete;
-	Global(const Global&) = delete;
-	Global(Global&&) = delete;
-	Global& operator=(const Global&) = delete;
-	Global& operator=(Global&&) = delete;
-public:
-	inline static std::vector<ProcessInfo> process_info;
-	inline static std::vector<std::thread> exec_list;
-	inline static size_t proxy_count{ 0 };
-	inline static uint64_t cyclic_query_value;
-};
-
 class Config final{
 private:
 	Config() = delete;
@@ -70,5 +54,23 @@ public:
 
 	}
 };
+
+class Global final {
+	friend class Config;
+private:
+	Global() = delete;
+	~Global() = delete;
+	Global(const Global&) = delete;
+	Global(Global&&) = delete;
+	Global& operator=(const Global&) = delete;
+	Global& operator=(Global&&) = delete;
+public:
+	inline static std::vector<ProcessInfo> process_info;
+	inline static std::vector<std::thread> exec_list;
+	inline static size_t proxy_count{ 0 };
+	inline static uint64_t cyclic_query_value{ 0 };
+	inline static std::string resource_path{ Config::config_yaml["other"]["resource-path"].as<std::string>()};
+};
+
 
 #endif
