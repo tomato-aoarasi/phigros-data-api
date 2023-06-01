@@ -90,7 +90,10 @@ inline void start(void) {
     auto proxy_count{ Global::proxy_count };
     crow::SimpleApp app;
 
-    CROW_ROUTE(app, "/proxy/<path>")([&](const crow::request req,const std::string& uri) {;
+    // 负载均衡
+    CROW_ROUTE(app, "/proxy/<path>").methods(crow::HTTPMethod::Get, crow::HTTPMethod::Post, 
+        crow::HTTPMethod::Patch, crow::HTTPMethod::Delete, crow::HTTPMethod::Head)
+        ([&](const crow::request req,const std::string& uri) {;
         crow::response resp;
         resp.set_header("Content-Type", "application/json");
         std::vector<web::http::uri> backends;
@@ -98,6 +101,7 @@ inline void start(void) {
             uint8_t retry{ 0 };
             size_t max_retry{ (proxy_count + 1) / 2 };
 
+            // 负载均衡url
             for(const auto& info : Global::process_info){
                 std::string s_url{ proxy_url + ":"s + std::to_string(info.p_port) + '/' + uri};
 
@@ -120,12 +124,37 @@ inline void start(void) {
             while(1){
                 ++retry;
                 auto& client = clients.at(Global::cyclic_query_value % clients.size());
+                auto& u = backends.at(Global::cyclic_query_value % backends.size());
                 ++Global::cyclic_query_value;
-                web::http::http_request request(web::http::methods::GET);
+                web::http::http_request request;
 
+                // 选择请求方式
+                switch (req.method)
+                {
+                case crow::HTTPMethod::Get:
+                    request.set_method(web::http::methods::GET);
+                    break;
+                case crow::HTTPMethod::Post:
+                    request.set_method(web::http::methods::POST);
+                    break;
+                case crow::HTTPMethod::Patch:
+                    request.set_method(web::http::methods::PATCH);
+                    break;
+                case crow::HTTPMethod::Delete:
+                    request.set_method(web::http::methods::DEL);
+                    break;
+                case crow::HTTPMethod::Head:
+                    request.set_method(web::http::methods::HEAD);
+                    break;
+                default:
+                    throw self::HTTPException("", 405);
+                    break;
+                }
                 for (const auto& header : req.headers) {
                     request.headers().add(header.first, header.second);
                 }
+                // 设置request的body
+                request.set_body(U(req.body));
 
                 web::http::http_response response{ client.request(request).get() };
                 spdlog::info(std::format("Proxy server: {}", client.base_uri().to_string()));
@@ -134,14 +163,21 @@ inline void start(void) {
                         response.status_code(), retry, client.base_uri().port()));
 
                     if (response.status_code() < 500 && response.status_code() >= 400) {
-                        concurrency::streams::stringstreambuf buffer;
-                        response.body().read_to_end(buffer).get();
-                        body = buffer.collection();
+                        try {
+                            concurrency::streams::stringstreambuf buffer;
+                            response.body().read_to_end(buffer).get();
+                            body = buffer.collection();
 
-                        data_body = Json::parse(body);
-                        if (data_body.contains("detail")) {
-                            throw self::HTTPException(data_body.at("detail").get<std::string>(), response.status_code());
+                            data_body = Json::parse(body);
+                            if (data_body.contains("detail")) {
+                                throw self::HTTPException(data_body.at("detail").get<std::string>(), response.status_code());
+                            }
                         }
+                        catch (const self::HTTPException&) {
+                            throw;
+                        }
+                        catch (const std::exception&){}
+                        
                         throw self::HTTPException("", response.status_code());
                     }
 
