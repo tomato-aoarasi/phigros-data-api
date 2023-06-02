@@ -25,6 +25,7 @@ namespace std {
 #include "common/self_exception.hpp"
 #include "common/http_util.hpp"
 #include "common/crow_middleware.hpp"
+#include "common/log_system.hpp"
 
 #include <restbed>
 #include <ctime>
@@ -39,8 +40,13 @@ namespace std {
 
 using namespace std::chrono_literals;
 
+UserData getUser(std::string_view);
+
 //初始化
 inline void init(void) {
+    Config::initialized();
+    LogSystem::initialized(); 
+
     self::DB::LocalDB << "DELETE FROM ProcessInfo;";
 
     //const uint32_t PID = system(command.c_str());   // 运行命令   
@@ -90,12 +96,11 @@ inline void start(void) {
     auto proxy_count{ Global::proxy_count };
     crow::SimpleApp app;
 
-    // 负载均衡
+    // 反向代理phi的api
     CROW_ROUTE(app, "/proxy/<path>").methods(crow::HTTPMethod::Get, crow::HTTPMethod::Post, 
         crow::HTTPMethod::Patch, crow::HTTPMethod::Delete, crow::HTTPMethod::Head)
         ([&](const crow::request req,const std::string& uri) {;
         crow::response resp;
-        resp.set_header("Content-Type", "application/json");
         std::vector<web::http::uri> backends;
         try {
             uint8_t retry{ 0 };
@@ -121,7 +126,7 @@ inline void start(void) {
 
             std::string body;
             Json data_body;
-            while(1){
+            while (1) {
                 ++retry;
                 auto& client = clients.at(Global::cyclic_query_value % clients.size());
                 auto& u = backends.at(Global::cyclic_query_value % backends.size());
@@ -157,9 +162,14 @@ inline void start(void) {
                 request.set_body(U(req.body));
 
                 web::http::http_response response{ client.request(request).get() };
-                spdlog::info(std::format("Proxy server: {}", client.base_uri().to_string()));
+
+                for (const auto& header : response.headers()){
+                    resp.set_header(header.first, header.second);
+                };
+
+                LogSystem::logInfo(std::format("Proxy server: {}", client.base_uri().to_string()));
                 if (response.status_code() != web::http::status_codes::OK && retry <= max_retry){
-                    spdlog::error(std::format("connect fail, code: {}, retry: {}, err_port: {}",
+                    LogSystem::logError(std::format("connect fail, code: {}, retry: {}, err_port: {}",
                         response.status_code(), retry, client.base_uri().port()));
 
                     if (response.status_code() < 500 && response.status_code() >= 400) {
@@ -205,21 +215,143 @@ inline void start(void) {
             }
             resp.code = 200;
             resp.write(data_body.dump(2));
+            LogSystem::logInfo("query success");
             return resp;
-        }
-        catch (const self::HTTPException& e) {
+        }catch (const self::HTTPException& e) {
+            LogSystem::logError(std::format("code: {},detail: {}",e.getCode(),e.getMessage()));
             resp.code = e.getCode();
             resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage()).dump(2));
         }catch(const std::runtime_error& e){
+            LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
             resp.code = 500;
             resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(2));
         }catch (const std::exception& e) {
+            LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
             resp.code = 500;
             resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500).dump(2));
         }
+        resp.set_header("Content-Type", "application/json");
         return resp;
         });
+    
+    // 添加用户
+    CROW_ROUTE(app, "/manage/add").methods(crow::HTTPMethod::Post)([&](const crow::request req) {
+            crow::response resp;
+            resp.set_header("Content-Type", "application/json");
+            LogSystem::logInfo("添加授权用户");
+            try {
+                auto authentication{ getUser(req.get_header_value("Authorization")) };
+                if (authentication.authority > 5 || authentication.authority < 4)
+                {
+                    throw self::HTTPException("", 401);
+                }
 
+                Json data{ Json::parse(req.body) };
+                std::exchange(data, data[0]);
+
+                self::DB::LocalDB << "insert into User (user,token,authority) values (?,?,?);"
+                    << data.at("user").get<std::string>()
+                    << self::Tools::generateToken()
+                    << data.at("authority").get<uint8_t>();
+
+                LogSystem::logInfo("添加授权用户成功");
+                resp.write("ok");
+                return resp;
+            }catch (const self::HTTPException& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", e.getCode(), e.getMessage()));
+                resp.code = e.getCode();
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage()).dump(2));
+            }catch (const std::runtime_error& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
+                resp.code = 500;
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(2));
+            }catch (const std::exception& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
+                resp.code = 500;
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(2));
+            }
+            return resp;
+        });
+
+    // 授权列表
+    CROW_ROUTE(app, "/manage/userlist").methods(crow::HTTPMethod::Get)([&](const crow::request req) {
+            crow::response resp;
+            resp.set_header("Content-Type", "application/json");
+            LogSystem::logInfo("用户列表获取");
+            try {
+                auto authentication{ getUser(req.get_header_value("Authorization")) };
+                if (authentication.authority > 5 || authentication.authority < 4)
+                {
+                    throw self::HTTPException("", 401);
+                }
+
+                Json result;
+                
+                self::DB::LocalDB << "select sid,user,api_calls,token,authority from User;"
+                    >> [&](unsigned int sid, std::string user, unsigned int api_calls, std::string token, unsigned char authority) {
+                    result[user] = {
+                        {"sid", sid},
+                        {"apiCalls", api_calls},
+                        {"token", token},
+                        {"authority", authority}
+                    };
+                };
+
+                LogSystem::logInfo("用户列表获取成功");
+                resp.write(result.dump(2));
+                return resp;
+            }catch (const self::HTTPException& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", e.getCode(), e.getMessage()));
+                resp.code = e.getCode();
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage()).dump(2));
+            }catch (const std::runtime_error& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
+                resp.code = 500;
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(2));
+            }catch (const std::exception& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
+                resp.code = 500;
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(2));
+            }
+            return resp;
+        });
+
+    // 授权
+    CROW_ROUTE(app, "/manage/permissions/<int>/<int>").methods(crow::HTTPMethod::Put)([&](const crow::request req,int sid, int auth) {
+            crow::response resp;
+            resp.set_header("Content-Type", "application/json");
+            LogSystem::logInfo("修改权限");
+            try {
+                auto authentication{ getUser(req.get_header_value("Authorization")) };
+                if (authentication.authority > 5 || authentication.authority < 4)
+                {
+                    throw self::HTTPException("", 401);
+                }
+
+                self::DB::LocalDB << "UPDATE User SET authority = ? WHERE sid = ?"
+                    << auth
+                    << sid;
+
+                LogSystem::logInfo("修改权限成功");
+                resp.write("ok");
+                return resp;
+            }catch (const self::HTTPException& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", e.getCode(), e.getMessage()));
+                resp.code = e.getCode();
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage()).dump(2));
+            }catch (const std::runtime_error& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
+                resp.code = 500;
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(2));
+            }catch (const std::exception& e) {
+                LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
+                resp.code = 500;
+                resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(2));
+            }
+            return resp;
+        });
+
+    // 资源
     CROW_ROUTE(app, "/<path>")([&](const std::string& p) {
         crow::response response;
 
@@ -253,5 +385,37 @@ inline void start(void) {
 
     app.port(port).multithreaded().run_async();
 }
+
+
+UserData getUser(std::string_view authHeader) {
+    UserData u;
+
+    std::string bearer{ "Bearer " };
+    std::string token{ "" };
+
+    size_t pos = authHeader.find(bearer);
+    if (pos != std::string::npos) {
+        token = authHeader.substr(pos + bearer.length());
+    }
+
+    //std::cout << token << std::endl;
+
+    self::DB::LocalDB << "select sid,user,api_calls,token,authority from User where token = ?;"
+        << std::move(token)
+        >> [&](unsigned int sid, std::string  user, unsigned int api_calls, std::string token, unsigned char authority) {
+        u.api_calls = api_calls;
+        u.authority = authority;
+        u.sid = sid;
+        u.token = token;
+        u.username = user;
+    };
+
+    self::DB::LocalDB << "UPDATE User SET api_calls = api_calls + 1 WHERE sid = ?"
+        << u.sid;
+
+    //std::cout << u.sid << "/" << u.username << "/" << u.token << "/" << u.api_calls << "/" << u.authority << std::endl;
+
+    return u;
+};
 
 #endif

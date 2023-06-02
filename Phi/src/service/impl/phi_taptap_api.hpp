@@ -106,7 +106,7 @@ namespace self {
 		float acc{};
 		unsigned int score{};
 		bool is_fc{};
-		std::string difficulty;
+		std::string difficulty{};
 	};
 
 	struct UserData {

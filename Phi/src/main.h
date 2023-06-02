@@ -90,6 +90,7 @@ inline void init(void) {
                     phi.rating[4] = rating_lg;
 
                     Global::PhigrosSongInfo[sid] = std::move(phi);
+                    Global::Phis[id] = sid;
                 }
     };
 }

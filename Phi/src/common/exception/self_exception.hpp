@@ -61,6 +61,12 @@ namespace self {
             this->code = code;
         };
 
+        HTTPException& operator=(const HTTPException& rhs) {
+            this->code = rhs.code;
+            this->msg = rhs.msg;
+            return *this;
+        }
+
         const std::string& getMessage() const {
             return this->msg;
         }

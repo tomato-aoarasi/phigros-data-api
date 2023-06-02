@@ -67,6 +67,7 @@ class Global final {
 public:
 	inline static std::unordered_map<std::string, DefinedStruct::PhiSongInfo> PhigrosSongInfo{};
 	inline static std::filesystem::path ExecutableFilePath;
+	inline static std::unordered_map<int, std::string> Phis{};
 };
 
 class Config final{

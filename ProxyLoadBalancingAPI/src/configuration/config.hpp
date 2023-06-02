@@ -39,6 +39,16 @@ struct ProcessInfo {
 	std::string p_path;
 };
 
+struct user {
+	unsigned int sid{ std::numeric_limits<unsigned int>::max() };
+	std::string username{ "" };
+	unsigned int api_calls{ 0 };
+	std::string token{ "" };
+	unsigned char authority{ 0 };
+};
+
+#define UserData user
+
 class Config final{
 private:
 	Config() = delete;

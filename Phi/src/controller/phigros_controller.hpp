@@ -7,6 +7,7 @@
 */
 #pragma once
 
+#include <regex>
 #include <configuration/config.hpp>
 #include <service/phigros_service.hpp>
 
@@ -134,7 +135,7 @@ public:
 
 					if (sessionToken.empty())
 					{
-						throw self::HTTPException("SessionToken is empty.", 401);
+						throw self::HTTPException("SessionToken is empty.", 403);
 					}
 
 					// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
@@ -152,6 +153,10 @@ public:
 					else {
 						throw self::HTTPException("parameter 'songid' required and parameter cannot be empty.", 400);
 					}
+
+					try {
+						songid = Global::Phis.at(std::stoi(songid));
+					}catch (...) {}
 
 					if (OtherUtil::verifyParam(req, "level")) {
 						difficulty = std::stoul(req.url_params.get("level"));
