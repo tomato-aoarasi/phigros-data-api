@@ -133,9 +133,13 @@ namespace self {
 
 				auto b64_to_int = [&](char c) -> int {
 					size_t pos = base64_chars.find(c);
+					
+					/*
 					if (pos == std::string::npos) {
 						throw std::runtime_error("Invalid base64 character");
 					}
+					*/
+					
 					return pos;
 				};
 
