@@ -223,6 +223,7 @@ public:
 		data["content"]["record"]["score"] = record.score;
 		data["content"]["record"]["isfc"] = record.is_fc;
 		data["content"]["record"]["title"] = Global::PhigrosSongInfo[song_id].title;
+		data["content"]["record"]["artist"] = Global::PhigrosSongInfo[song_id].artist;
 		data["content"]["record"]["rating"] = rate;
 		data["content"]["record"]["rks"] = rks;
 

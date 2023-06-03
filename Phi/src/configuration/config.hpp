@@ -57,6 +57,7 @@ namespace DefinedStruct{
 		std::string sid;
 		int id;
 		std::string title;
+		std::string artist;
 		std::string song_illustration_path;
 		float rating[5]{ 0.0f,0.0f,0.0f,0.0f,0.0f };
 	};

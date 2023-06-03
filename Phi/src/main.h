@@ -73,15 +73,16 @@ inline void init(void) {
     SQL_Util::initialized();
 
     // 初始化phigros
-    SQL_Util::PhiDB << "select sid,id,title,song_illustration_path,rating_ez,rating_hd,rating_in,rating_at,rating_lg from phigros;"
+    SQL_Util::PhiDB << "select sid,id,title,song_illustration_path,rating_ez,rating_hd,rating_in,rating_at,rating_lg,artist from phigros;"
         >> [&](std::string sid, int id, std::string title, std::string song_illustration_path,
-            float rating_ez, float rating_hd, float rating_in, float rating_at, float rating_lg) {
+            float rating_ez, float rating_hd, float rating_in, float rating_at, float rating_lg, std::string artist) {
                 DefinedStruct::PhiSongInfo phi;
                 if (!sid.empty())
                 {
                     phi.sid = sid;
                     phi.id = id;
                     phi.title = title;
+                    phi.artist = artist;
                     phi.song_illustration_path = song_illustration_path;
                     phi.rating[0] = rating_ez;
                     phi.rating[1] = rating_hd;
