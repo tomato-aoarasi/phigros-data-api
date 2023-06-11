@@ -55,8 +55,6 @@ public:
 		//std::cout << "\n=====================\n";
 		auto playerSummary{ phiAPI.GetSummary()};
 		auto playerData{ phiAPI.getUserData() };
-		bool has_phi{ singlePhi.size() > 0 };
-		data["content"]["best_list"]["phi"] = has_phi;
 		data["content"]["playerNickname"] = phiAPI.getNickname();
 		data["content"]["challengeModeRank"] = playerSummary.ChallengeModeRank;
 		data["content"]["rankingScore"] = playerSummary.RankingScore;
@@ -197,6 +195,7 @@ public:
 			//if (count >= 19)break;
 		}
 		data["content"]["best_list"]["best"] = std::move(res);
+		data["content"]["best_list"]["phi"] = singlePhi.size() > 0;
 		return data;
 	};
 
@@ -207,7 +206,17 @@ public:
 
 		auto records{ phiAPI.getPlayerRecord() };
 
-		auto record{ records.at(song_id).at(difficulty) };
+		self::SongScore record{};
+		if (difficulty == 4) {
+			for (uint8_t i{ difficulty }; i > 0; --i)
+			{
+				--difficulty;
+				if (records.at(song_id).count(difficulty)){
+					break;
+				}
+			}
+		}
+		record = records.at(song_id).at(difficulty);
 
 		float
 			acc{ record.acc },

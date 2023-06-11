@@ -144,7 +144,8 @@ public:
 					{
 						throw self::HTTPException("", 401);
 					}
-					unsigned char difficulty{ 2 };
+					/* EZ:0, HD:1, IN:2, AT:3, Auto: 4 */
+					unsigned char difficulty{ 4 };
 					std::string songid{ "" };
 
 					if (OtherUtil::verifyParam(req, "songid")) {
