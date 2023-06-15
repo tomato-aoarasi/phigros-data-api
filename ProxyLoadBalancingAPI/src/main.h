@@ -152,10 +152,13 @@ inline void start(void) {
                     request.set_method(web::http::methods::HEAD);
                     break;
                 default:
-                    throw self::HTTPException("", 405);
+                    throw self::HTTPException("", 405, 1);
                     break;
                 }
                 for (const auto& header : req.headers) {
+                    if (header.first == "SessionToken" || header.first == "Authorization") {
+                        LogSystem::logInfo(std::format("[Header]{}: {}", header.first, header.second));
+                    }
                     request.headers().add(header.first, header.second);
                 }
                 // 设置request的body
@@ -179,16 +182,14 @@ inline void start(void) {
                             body = buffer.collection();
 
                             data_body = Json::parse(body);
-                            if (data_body.contains("detail")) {
-                                throw self::HTTPException(data_body.at("detail").get<std::string>(), response.status_code());
-                            }
+                            BODY_SELECT;
                         }
                         catch (const self::HTTPException&) {
                             throw;
                         }
                         catch (const std::exception&){}
                         
-                        throw self::HTTPException("", response.status_code());
+                        throw self::HTTPException("", response.status_code(), 1);
                     }
 
                     continue;
@@ -200,10 +201,7 @@ inline void start(void) {
 
                     data_body = Json::parse(body);
 
-                    if (data_body.contains("detail")) {
-                        throw self::HTTPException(data_body.at("detail").get<std::string>(), response.status_code());
-                    }
-                    throw self::HTTPException("", response.status_code());
+                    BODY_SELECT;
                 }
 
                 concurrency::streams::stringstreambuf buffer;
@@ -218,17 +216,17 @@ inline void start(void) {
             LogSystem::logInfo("query success");
             return resp;
         }catch (const self::HTTPException& e) {
-            LogSystem::logError(std::format("code: {},detail: {}",e.getCode(),e.getMessage()));
+            LogSystem::logError(std::format("code: {},detail: {},status: {}",e.getCode(),e.getMessage(), e.getStatus()));
             resp.code = e.getCode();
-            resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage()).dump(2));
+            resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage(), e.getStatus()).dump(2));
         }catch(const std::runtime_error& e){
             LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
             resp.code = 500;
-            resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(2));
+            resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(2));
         }catch (const std::exception& e) {
             LogSystem::logError(std::format("code: {},detail: {}", 500, e.what()));
             resp.code = 500;
-            resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500).dump(2));
+            resp.write(HTTPUtil::StatusCodeHandle::getSimpleJsonResult(500, "", 1).dump(2));
         }
         resp.set_header("Content-Type", "application/json");
         return resp;

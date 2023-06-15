@@ -82,5 +82,23 @@ public:
 	inline static std::string resource_path{ Config::config_yaml["other"]["resource-path"].as<std::string>()};
 };
 
+#define BODY_SELECT if (data_body.contains("detail") && data_body.contains("status")) { \
+	throw self::HTTPException( \
+		data_body.at("detail").get<std::string>(), \
+		response.status_code(), \
+		data_body.at("status").get<uint16_t>()); \
+} \
+else if (data_body.contains("status")) { \
+	throw self::HTTPException( \
+		"", \
+		response.status_code(), \
+		data_body.at("status").get<uint16_t>()); \
+} \
+else if (data_body.contains("detail")) { \
+throw self::HTTPException( \
+	data_body.at("detail").get<std::string>(), \
+	response.status_code(), \
+	1); \
+} \
 
 #endif

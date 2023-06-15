@@ -114,12 +114,12 @@ namespace self {
 	};
 
 	class PhiTaptapAPI {
-	private:
+	public:
 
 		class CloudSaveSummary {
 		public:
 			std::string updatedAt;
-			std::string UpdateTime;
+			std::time_t timestamp;
 			float RankingScore;
 			uint16_t ChallengeModeRank;
 			std::vector<uint8_t> EZ;
@@ -206,15 +206,19 @@ namespace self {
 				ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
 				std::time_t t = std::mktime(&tm);
 				t += 8L * 3600;
-				tm = *std::gmtime(&t);
+
+				std::tm* tm1{ std::localtime(&t) };
 				char buffer[80];
-				std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", &tm);
-				updatedAt = buffer;
-				this->UpdateTime = UpdateTime;
+				std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", tm1);
+				
+
+				this->updatedAt = buffer;
+				this->timestamp = t;
 				this->nickname = nickname;
 			}
 		};
 
+	private:
 		httplib::Headers m_headers{
 			{"X-LC-Id", "rAK3FfdieFob2Nn8Am"},
 			{"X-LC-Key", "Qr9AEqtuoSVS3zeD6iVbM4ZC0AtkJcQ89tywVyi0"},
@@ -333,13 +337,22 @@ namespace self {
 				}
 				else if(res->status < 500 && res->status >= 400){
 					is_exception_1 = true;
-					e1 = HTTPException("", res->status);
+					uint16_t status_code = 1;
+					switch (res->status)
+					{
+						case 400:
+							status_code = 4;
+							break;
+						default:
+							break;
+					}
+					e1 = HTTPException("", res->status, status_code);
 				}else if (res.error() != httplib::Error::Success) {
 					is_exception_1 = true;
-					e1 = HTTPException(httplib::to_string(err), 500);
+					e1 = HTTPException(httplib::to_string(err), 500, 1);
 				}else {
 					is_exception_1 = true;
-					e1 = HTTPException(httplib::to_string(res.error()), 500);
+					e1 = HTTPException(httplib::to_string(res.error()), 500, 1);
 				}
 			});
 
@@ -350,9 +363,9 @@ namespace self {
 				this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
 			}else if (res.error() != httplib::Error::Success) {
 				is_exception_2 = true;
-				e2 = HTTPException(httplib::to_string(err), 500);
+				e2 = HTTPException(httplib::to_string(err), 500, 1);
 			}else {
-				throw HTTPException(httplib::to_string(res.error()), 500);
+				throw HTTPException(httplib::to_string(res.error()), 500, 1);
 			}
 
 			get_player_info_thread.join();
@@ -383,17 +396,17 @@ namespace self {
 			auto result_zip{ game_save_zip.Get(save_uri) };
 			err = result_zip.error();
 			if (result_zip->status != 200) {
-				throw HTTPException(httplib::to_string(err), 500);
+				throw HTTPException(httplib::to_string(err), 500, 1);
 			}
 			else if (err != httplib::Error::Success) {
-				throw HTTPException(httplib::to_string(err), 500);
+				throw HTTPException(httplib::to_string(err), 500, 1);
 			}
 
 			mz_zip_archive zip_archive = {};
 			mz_bool status = mz_zip_reader_init_mem(&zip_archive, result_zip->body.data(), result_zip->body.size(), 0);
 			if (!status) {
 				mz_zip_reader_end(&zip_archive);
-				throw HTTPException("Decompression Failed", 500);
+				throw HTTPException("Decompression Failed", 500, 5);
 			}
 
 			try{
@@ -477,7 +490,7 @@ namespace self {
 			catch (...) {
 				// 关闭ZIP文件
 				mz_zip_reader_end(&zip_archive);
-				throw HTTPException("Unknown Error", 500);
+				throw HTTPException("Unknown Error", 500, 1);
 			}
 			
 			// 关闭ZIP文件

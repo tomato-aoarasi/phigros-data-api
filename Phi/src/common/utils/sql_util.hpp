@@ -58,8 +58,10 @@ private:
 protected:
 	inline static const std::filesystem::path ms_db_path{ Config::getConfig()["db"]["path"]["local"].as<std::string>() };
 	inline static const std::filesystem::path ms_db_phi{ Config::getConfig()["db"]["path"]["phi"].as<std::string>() };
+	inline static const std::filesystem::path ms_db_phi_player{ Config::getConfig()["db"]["path"]["phi-player"].as<std::string>() };
 public:
 	inline static sqlite::database LocalDB{ sqlite::database(ms_db_path.c_str()) };
 	inline static sqlite::database PhiDB{ sqlite::database(ms_db_phi.c_str()) };
+	inline static sqlite::database PlayerRdDB{ sqlite::database(ms_db_phi_player.c_str()) };
 };
 #endif

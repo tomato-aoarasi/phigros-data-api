@@ -14,7 +14,7 @@
 #ifndef PHIGROS_CONTROLLER_HPP
 #define PHIGROS_CONTROLLER_HPP  
 constexpr int amount_spaces{ 2 };
-//TODO 待补全
+
 class PhigrosController {
 private:
     PhigrosController() = delete;
@@ -73,14 +73,14 @@ public:
 
 				if (sessionToken.empty())
 				{
-					throw self::HTTPException("SessionToken is empty.", 401);
+					throw self::HTTPException("SessionToken is empty.", 401, 4);
 				}
 
 				// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
 				auto authentication{ getUser(req.get_header_value("Authorization")) };
 				if (authentication.authority == 0)
 				{
-					throw self::HTTPException("", 401);
+					throw self::HTTPException("", 401, 6);
 				}
 
 
@@ -94,27 +94,27 @@ public:
 			}catch (const self::HTTPException& e) {
 					if (e.getMessage().empty())
 					{
-						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode()).dump(amount_spaces));
+						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), "", e.getStatus()).dump(amount_spaces));
 					}
 					else {
-						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage()).dump(amount_spaces));
+						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage(), e.getStatus()).dump(amount_spaces));
 					}
-					LogSystem::logError(std::format("[Phigros]all ------ msg: {} / code: {}", e.what(), e.getCode()));
+					LogSystem::logError(std::format("[Phigros]all ------ msg: {} / code: {} / status: {}", e.what(), e.getCode(), e.getStatus()));
 					resp.code = e.getCode();
 				}
 				catch (const self::TimeoutException& e) {
 					LogSystem::logError("[PhigrosAPI]all ------ API请求超时");
-					resp.write(StatusCodeHandle::getSimpleJsonResult(408, "Data API request timeout").dump(amount_spaces));
+					resp.write(StatusCodeHandle::getSimpleJsonResult(408, "Data API request timeout", 2).dump(amount_spaces));
 					resp.code = 408;
 				}
 				catch (const std::runtime_error& e) {
 					LogSystem::logError(std::format("[PhigrosAPI]all ------ msg: {} / code: {}", e.what(), 500));
-					resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(amount_spaces));
+					resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
 					resp.code = 500;
 				}
 				catch (const std::exception& e) {
 					LogSystem::logError(std::format("[PhigrosAPI]all ------ msg: {} / code: {}", e.what(), 500));
-					resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(amount_spaces));
+					resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
 					resp.code = 500;
 				}
 
@@ -135,14 +135,14 @@ public:
 
 					if (sessionToken.empty())
 					{
-						throw self::HTTPException("SessionToken is empty.", 403);
+						throw self::HTTPException("SessionToken is empty.", 403, 4);
 					}
 
 					// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
 					auto authentication{ getUser(req.get_header_value("Authorization")) };
 					if (authentication.authority == 0)
 					{
-						throw self::HTTPException("", 401);
+						throw self::HTTPException("", 401, 6);
 					}
 					/* EZ:0, HD:1, IN:2, AT:3, Auto: 4 */
 					unsigned char difficulty{ 4 };
@@ -152,7 +152,7 @@ public:
 						songid = req.url_params.get("songid");
 					}
 					else {
-						throw self::HTTPException("parameter 'songid' required and parameter cannot be empty.", 400);
+						throw self::HTTPException("parameter 'songid' required and parameter cannot be empty.", 400, 7);
 					}
 
 					try {
@@ -170,35 +170,99 @@ public:
 					return resp;
 				}catch (const std::out_of_range& e) {
 					LogSystem::logError("[PhigrosAPI]best ------ 不存在的曲目id或难度");
-					resp.write(StatusCodeHandle::getSimpleJsonResult(400, "Invalid songid or level").dump(amount_spaces));
+					resp.write(StatusCodeHandle::getSimpleJsonResult(400, "Invalid songid or level", 3).dump(amount_spaces));
 					resp.code = 400;
 				}catch (const self::HTTPException& e) {
 					if (e.getMessage().empty())
 					{
-						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode()).dump(amount_spaces));
+						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), "", e.getStatus()).dump(amount_spaces));
 					}
 					else {
-						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage()).dump(amount_spaces));
+						resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage(), e.getStatus()).dump(amount_spaces));
 					}
-					LogSystem::logError(std::format("[Phigros]best ------ msg: {} / code: {}", e.what(), e.getCode()));
+					LogSystem::logError(std::format("[Phigros]best ------ msg: {} / code: {} / status: {}", e.what(), e.getCode(), e.getStatus()));
 					resp.code = e.getCode();
 				}
 				catch (const self::TimeoutException& e) {
 					LogSystem::logError("[PhigrosAPI]best ------ API请求超时");
-					resp.write(StatusCodeHandle::getSimpleJsonResult(408, "Data API request timeout").dump(amount_spaces));
+					resp.write(StatusCodeHandle::getSimpleJsonResult(408, "Data API request timeout", 2).dump(amount_spaces));
 					resp.code = 408;
 				}
 				catch (const std::runtime_error& e) {
 					LogSystem::logError(std::format("[PhigrosAPI]best ------ msg: {} / code: {}", e.what(), 500));
-					resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(amount_spaces));
+					resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
 					resp.code = 500;
 				}
 				catch (const std::exception& e) {
 					LogSystem::logError(std::format("[PhigrosAPI]best ------ msg: {} / code: {}", e.what(), 500));
-					resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what()).dump(amount_spaces));
+					resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
 					resp.code = 500;
 				}
 				return resp;
+				});
+
+
+		CROW_ROUTE(m_app, "/phi/record")
+			.methods("GET"_method)([&](const crow::request& req) {
+			crow::response resp;
+			resp.set_header("Content-Type", "application/json");
+			try {
+				// umyckc74rluncpn7mtxkcanxn
+				// yc443mp6cea7xozb3e0kxvvid
+				// qdpliq0laha53lfzfptyimz1j
+				// v6yitajqe20ceim211502r3h0
+				// 496bcu67y7j65oo900f9oznja
+				std::string sessionToken{ req.get_header_value("SessionToken") };
+
+				if (sessionToken.empty())
+				{
+					throw self::HTTPException("SessionToken is empty.", 401, 4);
+				}
+
+				// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
+				auto authentication{ getUser(req.get_header_value("Authorization")) };
+				if (authentication.authority == 0)
+				{
+					throw self::HTTPException("", 401, 6);
+				}
+
+
+				// 设置响应头为 application/json
+
+				// 将 JSON 数据作为响应体返回
+				resp.write(this->m_phigros->getRecords(authentication, sessionToken).dump(amount_spaces));
+
+
+				return resp;
+			}
+			catch (const self::HTTPException& e) {
+				if (e.getMessage().empty())
+				{
+					resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), "", e.getStatus()).dump(amount_spaces));
+				}
+				else {
+					resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage(), e.getStatus()).dump(amount_spaces));
+				}
+				LogSystem::logError(std::format("[Phigros]record ------ msg: {} / code: {} / status: {}", e.what(), e.getCode(), e.getStatus()));
+				resp.code = e.getCode();
+			}
+			catch (const self::TimeoutException& e) {
+				LogSystem::logError("[PhigrosAPI]record ------ API请求超时");
+				resp.write(StatusCodeHandle::getSimpleJsonResult(408, "Data API request timeout", 2).dump(amount_spaces));
+				resp.code = 408;
+			}
+			catch (const std::runtime_error& e) {
+				LogSystem::logError(std::format("[PhigrosAPI]record ------ msg: {} / code: {}", e.what(), 500));
+				resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
+				resp.code = 500;
+			}
+			catch (const std::exception& e) {
+				LogSystem::logError(std::format("[PhigrosAPI]record ------ msg: {} / code: {}", e.what(), 500));
+				resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
+				resp.code = 500;
+			}
+
+			return resp;
 				});
 	};
 };

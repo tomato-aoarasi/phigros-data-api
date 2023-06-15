@@ -34,10 +34,51 @@ private:
 		bool is_fc;
 		unsigned int score;
 	};
+	
+	inline void player_records(std::string_view sessionToken, self::PhiTaptapAPI::CloudSaveSummary& cloudSaveSummary) {
+		bool is_exists{ false }, is_timestamp_same {false};
+		std::string st{ sessionToken.data() };
+		SQL_Util::PlayerRdDB <<
+			"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name=?);"
+			<< st >> is_exists;
+
+		// 表不存在(第一次记录)
+		if (!is_exists){
+			//std::cout << "create" << std::endl;
+			SQL_Util::PlayerRdDB << 
+				"CREATE TABLE if not exists \"" + st + "\" ( "
+				"sid integer PRIMARY KEY AUTOINCREMENT NOT NULL,"
+				"rks text, "
+				"challengeModeRank integer, "
+				"timestamp date, "
+				"nickname text );";
+			//std::cout << "create end" << std::endl;
+		}
+		// 表存在
+		else 
+		{
+			//std::cout << "timestamp" << std::endl;
+			std::time_t timestamp_temp {};
+			SQL_Util::PlayerRdDB << "SELECT timestamp FROM \"" + st + "\" WHERE sid = (SELECT MAX(sid) FROM \"" + st + "\"); " >> timestamp_temp;
+			is_timestamp_same = timestamp_temp == cloudSaveSummary.timestamp;
+			//std::cout << "timestamp end" << std::endl;
+		}
+
+		if (!is_timestamp_same){
+			//std::cout << "insert" << std::endl;
+			SQL_Util::PlayerRdDB << "insert into \"" + st + "\" (rks,challengeModeRank,timestamp,nickname) values (?,?,?,?);"
+				<< cloudSaveSummary.RankingScore
+				<< cloudSaveSummary.ChallengeModeRank
+				<< cloudSaveSummary.timestamp
+				<< cloudSaveSummary.nickname;
+			//std::cout << "insert end" << std::endl;
+		}
+	};
 
 public:
 	virtual ~PhigrosServiceImpl() = default;
-	Json getAll(const UserData& authentication, std::string_view sessionToken) {
+	Json getAll(const UserData& authentication, std::string_view sessionToken) override {
+
 		Json data;
 
 		// umyckc74rluncpn7mtxkcanxn
@@ -55,10 +96,15 @@ public:
 		//std::cout << "\n=====================\n";
 		auto playerSummary{ phiAPI.GetSummary()};
 		auto playerData{ phiAPI.getUserData() };
+
+		// 玩家记录
+		player_records(sessionToken, playerSummary);
+
 		data["content"]["playerNickname"] = phiAPI.getNickname();
 		data["content"]["challengeModeRank"] = playerSummary.ChallengeModeRank;
 		data["content"]["rankingScore"] = playerSummary.RankingScore;
 		data["content"]["updateTime"] = playerSummary.updatedAt;
+		data["content"]["timestamp"] = playerSummary.timestamp;
 		{
 			data["content"]["other"]["records"]["AT"]["clear"] = playerSummary.AT[0];
 			data["content"]["other"]["records"]["AT"]["fc"] = playerSummary.AT[1];
@@ -123,7 +169,7 @@ public:
 					//std::cout << "[" << levels[i] << "] No Record\n";
 				}
 				catch (const std::exception& e) {
-					std::cout << e.what() << std::endl;
+					// std::cout << e.what() << std::endl;
 				}
 			}
 
@@ -196,10 +242,11 @@ public:
 		}
 		data["content"]["best_list"]["best"] = std::move(res);
 		data["content"]["best_list"]["phi"] = singlePhi.size() > 0;
+		data["status"] = 0;
 		return data;
 	};
 
-	Json getBest(const UserData& authentication, std::string_view sessionToken, const std::string& song_id, unsigned char difficulty) {
+	Json getBest(const UserData& authentication, std::string_view sessionToken, const std::string& song_id, unsigned char difficulty) override {
 		Json data;
 
 		self::PhiTaptapAPI phiAPI(sessionToken);
@@ -245,10 +292,15 @@ public:
 
 		auto playerSummary{ phiAPI.GetSummary() };
 		auto playerData{ phiAPI.getUserData() };
+
+		// 玩家记录
+		player_records(sessionToken, playerSummary);
+
 		data["content"]["playerNickname"] = phiAPI.getNickname();
 		data["content"]["challengeModeRank"] = playerSummary.ChallengeModeRank;
 		data["content"]["rankingScore"] = playerSummary.RankingScore;
 		data["content"]["updateTime"] = playerSummary.updatedAt;
+		data["content"]["timestamp"] = playerSummary.timestamp;
 		{
 			data["content"]["other"]["records"]["AT"]["clear"] = playerSummary.AT[0];
 			data["content"]["other"]["records"]["AT"]["fc"] = playerSummary.AT[1];
@@ -267,8 +319,44 @@ public:
 			data["content"]["other"]["profile"] = playerData.profile;
 		}
 
+		data["status"] = 0;
 		return data;
 	}
+
+
+	Json getRecords(const UserData& authentication, std::string_view sessionToken) override {
+		Json data;
+
+		if (!self::CheckParameterStr(sessionToken)) {
+			throw self::HTTPException("SQL injection may exist", 403, 8);
+		}
+
+		std::string st{ sessionToken.data() };
+		bool is_exists{ false };
+		SQL_Util::PlayerRdDB <<
+			"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name=?);"
+			<< st >> is_exists;
+
+		if (!is_exists) {
+			throw self::HTTPException("Record doesn't exist", 404, 9);
+		}
+
+		SQL_Util::PlayerRdDB << "select sid,rks,challengeModeRank,timestamp,nickname from \"" + st +  "\";"
+			>> [&](uint32_t sid, double rks, uint16_t challengeModeRank, std::time_t timestamp, std::string nickname) {
+
+			data["content"].emplace_back(
+				Json{
+				  {"sid", sid},
+				  {"rks", rks},
+				  {"challengeModeRank", challengeModeRank},
+				  {"timestamp", timestamp},
+				  {"nickname", nickname},
+				});
+		};
+
+		data["status"] = 0;
+		return data;
+	};
 private:
 };
 
