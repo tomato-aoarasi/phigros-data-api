@@ -332,10 +332,13 @@ namespace self {
 			std::thread get_player_info_thread([&] {
 				auto res = cli.Get(ME_URI, m_headers);
 				
-				if (res && res->status == 200) {
+				//std::cout << httplib::to_string(res.error()) << std::endl;
+				if (res.error() != httplib::Error::Success) {
+					is_exception_1 = true;
+					e1 = HTTPException(httplib::to_string(err), 500, 1);
+				} else if (res && res->status == 200) {
 					m_nickname = Json::parse(res->body)["nickname"].get<std::string>();
-				}
-				else if(res->status < 500 && res->status >= 400){
+				} else if(res->status < 500 && res->status >= 400){
 					is_exception_1 = true;
 					uint16_t status_code = 1;
 					switch (res->status)
@@ -347,10 +350,7 @@ namespace self {
 							break;
 					}
 					e1 = HTTPException("", res->status, status_code);
-				}else if (res.error() != httplib::Error::Success) {
-					is_exception_1 = true;
-					e1 = HTTPException(httplib::to_string(err), 500, 1);
-				}else {
+				} else {
 					is_exception_1 = true;
 					e1 = HTTPException(httplib::to_string(res.error()), 500, 1);
 				}
