@@ -203,7 +203,8 @@ public:
 				j["illustrationPath"] = value.song_illustration_path;
 			}
 
-			res.emplace_back(std::move(j));
+			//res.emplace_back(std::move());
+			data["content"]["best_list"]["phi"] = j;
 			//std::cout << "\n=====================\n";
 			if (count >= 1)break;
 		}
@@ -241,7 +242,7 @@ public:
 			//if (count >= 19)break;
 		}
 		data["content"]["best_list"]["best"] = std::move(res);
-		data["content"]["best_list"]["phi"] = singlePhi.size() > 0;
+		data["content"]["best_list"]["is_phi"] = singlePhi.size() > 0;
 		data["status"] = 0;
 		return data;
 	};
