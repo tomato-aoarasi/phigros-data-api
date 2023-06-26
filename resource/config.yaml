@@ -20,9 +20,11 @@ server:
      secret: HWqBXLYj8$z$ezR9gnihO8K13m#soNN^8WWuHMKDz12Vo6IWb3e6N!M4aHV@tCF3
      issuer: Bing
 other:
-  port: 8299
+  port: 8499
   exec-port-min: 8200
   exec-port-max: 8204
   unified-threads: 0
   proxy-uri: http://127.0.0.1
   resource-path: ./public/
+  player-save-path: ./save
+  plan-b: true

@@ -320,62 +320,84 @@ namespace self {
 		}
 	public:
 		PhiTaptapAPI(std::string_view sessionToken) {
+			std::string
+				filename{ "save" },
+				dir_path{ Global::PlayerSavePath + "/" + sessionToken.data() + "/" },
+				file_path{ dir_path + filename };
+
+
 			httplib::Error err{ httplib::Error::Success };
 
 			m_headers.insert({ "X-LC-Session", sessionToken.data() });
 			httplib::Client cli(URL);
 
-			bool is_exception_1{ false }, is_exception_2{ false };
-			HTTPException e1, e2;
+			try{
+				// 异步获取玩家自己信息的JSON
+				std::future<void> get_player_info_thread = std::async(std::launch::async, [&] {
+					auto res = cli.Get(ME_URI, m_headers);
 
-			// 获取玩家自己信息的JSON
-			std::thread get_player_info_thread([&] {
-				auto res = cli.Get(ME_URI, m_headers);
-				
-				//std::cout << httplib::to_string(res.error()) << std::endl;
-				if (res.error() != httplib::Error::Success) {
-					is_exception_1 = true;
-					e1 = HTTPException(httplib::to_string(err), 500, 1);
-				} else if (res && res->status == 200) {
-					m_nickname = Json::parse(res->body)["nickname"].get<std::string>();
-				} else if(res->status < 500 && res->status >= 400){
-					is_exception_1 = true;
-					uint16_t status_code = 1;
-					switch (res->status)
-					{
+					//std::cout << httplib::to_string(res.error()) << std::endl;
+					if (res.error() != httplib::Error::Success) {
+						throw HTTPException(httplib::to_string(err), 500, 1);
+					}
+					else if (res && res->status == 200) {
+						this->m_nickname = Json::parse(res->body)["nickname"].get<std::string>();
+					}
+					else if (res->status < 500 && res->status >= 400) {
+						uint16_t status_code = 1;
+						switch (res->status)
+						{
 						case 400:
 							status_code = 4;
 							break;
 						default:
 							break;
+						}
+						throw HTTPException("", res->status, status_code);
 					}
-					e1 = HTTPException("", res->status, status_code);
+					else {
+						throw HTTPException(httplib::to_string(res.error()), 500, 1);
+					}
+					});
+
+				// 获取玩家存档的JSON
+				auto res{ cli.Get(GAME_SAVE_URI, m_headers) };
+				if (res.error() != httplib::Error::Success) {
+					throw HTTPException(httplib::to_string(err), 500, 1);
+				} else if (res && res->status == 200) {
+					this->m_game_save_info = Json::parse(res->body);
+					this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
 				} else {
-					is_exception_1 = true;
-					e1 = HTTPException(httplib::to_string(res.error()), 500, 1);
+					throw HTTPException(httplib::to_string(res.error()), 500, 1);
 				}
-			});
 
-			// 获取玩家存档的JSON
-			auto res { cli.Get(GAME_SAVE_URI, m_headers) };
-			if (res && res->status == 200) {
-				this->m_game_save_info = Json::parse(res->body);
-				this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
-			}else if (res.error() != httplib::Error::Success) {
-				is_exception_2 = true;
-				e2 = HTTPException(httplib::to_string(err), 500, 1);
-			}else {
-				throw HTTPException(httplib::to_string(res.error()), 500, 1);
+				get_player_info_thread.get();
 			}
+			catch (const nlohmann::json::type_error&) {
+				// plan B启动
+				if (Global::IsPlanB)
+				{
+					LogSystem::logInfo("悲观主义的一套planB");
 
-			get_player_info_thread.join();
-			if (is_exception_1)
-			{
-				throw e1;
+					mz_zip_archive zip_archive{};
+					memset(&zip_archive, 0, sizeof(zip_archive));
+					mz_bool status{ mz_zip_reader_init_file(&zip_archive, file_path.c_str(), 0) };
+					if (!status) {
+						mz_zip_reader_end(&zip_archive);
+						throw HTTPException("Decompression Failed", 500, 5);
+					}
+					#include "zip_archive"
+					// 突然终止
+					return;
+				}
+				throw;
+			} 
+			catch (const HTTPException&) {
+				throw;
 			}
-			else if (is_exception_2) {
-				throw e2;
-			}
+			catch (const std::exception&) {
+				throw;
+			};
 
 			std::string
 				save_url{ this->m_game_save_info["gameFile"]["url"].get<std::string>() },
@@ -393,108 +415,74 @@ namespace self {
 
 			// 发送HTTP GET请求
 			httplib::Client game_save_zip(save_domain);
-			auto result_zip{ game_save_zip.Get(save_uri) };
+			httplib::Result result_zip{ game_save_zip.Get(save_uri) };
 			err = result_zip.error();
-			if (result_zip->status != 200) {
+			if (err != httplib::Error::Success) {
 				throw HTTPException(httplib::to_string(err), 500, 1);
 			}
-			else if (err != httplib::Error::Success) {
+			else if (result_zip->status != 200) {
 				throw HTTPException(httplib::to_string(err), 500, 1);
 			}
 
-			mz_zip_archive zip_archive = {};
-			mz_bool status = mz_zip_reader_init_mem(&zip_archive, result_zip->body.data(), result_zip->body.size(), 0);
+			// ==========================================
+			// 存储文件(临时用)
+			bool is_exists{ false }, do_save{false};
+			SQL_Util::LocalDB << "select COUNT(sessionToken) from PlayerKey where sessionToken = ?;" << sessionToken.data() >> is_exists;
+			std::string key{ this->m_game_save_info["gameFile"]["key"].get<std::string>() };
+			// 如果不存在字段
+			if (!is_exists){
+				// 第一个用户新建字段
+				SQL_Util::LocalDB  << "insert into PlayerKey(sessionToken,key,nickname) values (?,?,?);"
+					<< sessionToken.data()
+					<< key
+					<< this->m_nickname;
+				do_save = true;
+				LogSystem::logInfo(std::format("已新增{}字段", sessionToken.data()));
+			}
+			else {
+				std::string key_old{};
+				SQL_Util::LocalDB << "select key from PlayerKey where sessionToken = ?;" << sessionToken.data() >> key_old;
+				if (key_old != key) {
+					// key不相同更新字段
+					SQL_Util::LocalDB << "UPDATE PlayerKey SET key = ? WHERE sessionToken = ?"
+						<< key
+						<< sessionToken.data();
+					do_save = true;
+					LogSystem::logInfo(std::format("已更新{}的字段", sessionToken.data()));
+				}
+			}
+			// 是否需要存储呢
+			if (do_save){
+				namespace fs = std::filesystem;
+				
+				// 如果目录不存在，则创建它
+				if (!fs::exists(dir_path)) {
+					fs::create_directories(dir_path);
+				}
+
+				std::ofstream file(file_path, std::ios::binary | std::ios::trunc);
+				if (file.is_open()) {
+					// 将响应体写入文件
+					file.write(result_zip->body.c_str(), result_zip->body.length());
+					file.close();
+					LogSystem::logInfo(std::format("已将{}存储到SQLite中", sessionToken.data()));
+				}
+				else {
+					file.close();
+					throw HTTPException("Failed to save file to "s + file_path, 500, 1);
+				}
+			}
+			// ==========================================
+
+			mz_zip_archive zip_archive {};
+			memset(&zip_archive, 0, sizeof(zip_archive));
+
+			mz_bool status{ mz_zip_reader_init_mem(&zip_archive, result_zip->body.data(), result_zip->body.size(), 0)};
 			if (!status) {
 				mz_zip_reader_end(&zip_archive);
 				throw HTTPException("Decompression Failed", 500, 5);
 			}
-
-			try{
-				for (int i = 0; i < mz_zip_reader_get_num_files(&zip_archive); ++i) {
-					mz_zip_archive_file_stat file_stat;
-					mz_zip_reader_file_stat(&zip_archive, i, &file_stat);
-
-					auto filename{ std::string(file_stat.m_filename) };
-
-					//std::cout << "filename: " << filename << "\nsize: " << file_stat.m_uncomp_size << std::endl;
-
-					
-					if (filename == "user")
-					{
-
-						std::vector<ubyte> file_data(file_stat.m_uncomp_size);
-						mz_zip_reader_extract_to_mem(&zip_archive, file_stat.m_file_index, file_data.data(), file_data.size(), 0);
-						file_data.erase(file_data.begin());
-
-						// 编码解码
-						std::vector<ubyte> key{ OtherUtil::base64Decode(this->KEY_BASE64) };
-						std::vector<ubyte> iv{ OtherUtil::base64Decode(this->IV_BASE64) };
-
-						auto decrypt_data{ OtherUtil::decrypt_AES_CBC(file_data, key, iv) };
-
-						auto data_size{ decrypt_data.size() };
-
-						int string_size{ 128 * (decrypt_data[2] - 1) + decrypt_data[1] },
-							init_pos{ 3 };
-						if (string_size >= data_size) {
-							init_pos = 2;
-							string_size = decrypt_data[1];
-						}
-						try{
-							if (static_cast<unsigned long>(init_pos) + string_size > data_size) {
-								throw std::runtime_error("Profile Array Bound Error");
-							}
-							std::string profile(decrypt_data.begin() + init_pos, decrypt_data.begin() + init_pos + string_size);
-							this->m_user_data.profile = std::move(profile);
-							auto pos{ std::move(init_pos) + std::move(string_size) };
-							auto avatar_size{decrypt_data[pos]};
-
-							if (static_cast<unsigned long>(pos) + avatar_size + 1 > data_size) {
-								throw std::out_of_range("Avatar Array Bound Error");
-							}
-							std::string avatar(decrypt_data.begin() + pos + 1, decrypt_data.begin() + pos + avatar_size + 1);
-							this->m_user_data.avatar = std::move(avatar);
-							pos += std::move(avatar_size) + 1;
-							auto background_size{ decrypt_data[pos] };
-							if (static_cast<unsigned long>(pos) + std::move(background_size) + 1 > data_size) {
-								throw std::out_of_range("Background Array Bound Error");
-							}
-							std::string background(decrypt_data.begin() + pos + 1, decrypt_data.begin() + pos + std::move(background_size) + 1);
-							this->m_user_data.background = std::move(background);
-						}
-						catch (const std::out_of_range& e) {
-							LogSystem::logError(e.what());
-						}
-						catch (const std::runtime_error& e) {
-							LogSystem::logError(e.what());
-						}
-					}
-
-					if (filename == "gameRecord")
-					{
-						std::vector<ubyte> file_data(file_stat.m_uncomp_size);
-						mz_zip_reader_extract_to_mem(&zip_archive, file_stat.m_file_index, file_data.data(), file_data.size(), 0);
-						file_data.erase(file_data.begin());
-
-						// 编码解码
-						std::vector<ubyte> key{ OtherUtil::base64Decode(this->KEY_BASE64) };
-						std::vector<ubyte> iv{ OtherUtil::base64Decode(this->IV_BASE64) };
-
-						auto decrypt_data{ OtherUtil::decrypt_AES_CBC(file_data, key, iv) };
-						//HexDebug(decrypt_data);
-						getGameRecord(decrypt_data);
-						break;
-					}
-				}
-			}
-			catch (...) {
-				// 关闭ZIP文件
-				mz_zip_reader_end(&zip_archive);
-				throw HTTPException("Unknown Error", 500, 1);
-			}
-			
-			// 关闭ZIP文件
-			mz_zip_reader_end(&zip_archive);
+			#include "zip_archive"
 		};
 
 		~PhiTaptapAPI() noexcept {

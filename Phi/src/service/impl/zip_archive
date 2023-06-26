@@ -1,0 +1,86 @@
+
+			try{
+				for (int i = 0; i < mz_zip_reader_get_num_files(&zip_archive); ++i) {
+					mz_zip_archive_file_stat file_stat;
+					mz_zip_reader_file_stat(&zip_archive, i, &file_stat);
+
+					auto filename{ std::string(file_stat.m_filename) };
+
+					//std::cout << "filename: " << filename << "\nsize: " << file_stat.m_uncomp_size << std::endl;
+
+					
+					if (filename == "user")
+					{
+
+						std::vector<ubyte> file_data(file_stat.m_uncomp_size);
+						mz_zip_reader_extract_to_mem(&zip_archive, file_stat.m_file_index, file_data.data(), file_data.size(), 0);
+						file_data.erase(file_data.begin());
+
+						// 编码解码
+						std::vector<ubyte> key{ OtherUtil::base64Decode(this->KEY_BASE64) };
+						std::vector<ubyte> iv{ OtherUtil::base64Decode(this->IV_BASE64) };
+
+						auto decrypt_data{ OtherUtil::decrypt_AES_CBC(file_data, key, iv) };
+
+						auto data_size{ decrypt_data.size() };
+
+						int string_size{ 128 * (decrypt_data[2] - 1) + decrypt_data[1] },
+							init_pos{ 3 };
+						if (string_size >= data_size) {
+							init_pos = 2;
+							string_size = decrypt_data[1];
+						}
+						try{
+							if (static_cast<unsigned long>(init_pos) + string_size > data_size) {
+								throw std::runtime_error("Profile Array Bound Error");
+							}
+							std::string profile(decrypt_data.begin() + init_pos, decrypt_data.begin() + init_pos + string_size);
+							this->m_user_data.profile = std::move(profile);
+							auto pos{ std::move(init_pos) + std::move(string_size) };
+							auto avatar_size{decrypt_data[pos]};
+
+							if (static_cast<unsigned long>(pos) + avatar_size + 1 > data_size) {
+								throw std::out_of_range("Avatar Array Bound Error");
+							}
+							std::string avatar(decrypt_data.begin() + pos + 1, decrypt_data.begin() + pos + avatar_size + 1);
+							this->m_user_data.avatar = std::move(avatar);
+							pos += std::move(avatar_size) + 1;
+							auto background_size{ decrypt_data[pos] };
+							if (static_cast<unsigned long>(pos) + std::move(background_size) + 1 > data_size) {
+								throw std::out_of_range("Background Array Bound Error");
+							}
+							std::string background(decrypt_data.begin() + pos + 1, decrypt_data.begin() + pos + std::move(background_size) + 1);
+							this->m_user_data.background = std::move(background);
+						}
+						catch (const std::out_of_range& e) {
+							LogSystem::logError(e.what());
+						}
+						catch (const std::runtime_error& e) {
+							LogSystem::logError(e.what());
+						}
+					}
+
+					if (filename == "gameRecord")
+					{
+						std::vector<ubyte> file_data(file_stat.m_uncomp_size);
+						mz_zip_reader_extract_to_mem(&zip_archive, file_stat.m_file_index, file_data.data(), file_data.size(), 0);
+						file_data.erase(file_data.begin());
+
+						// 编码解码
+						std::vector<ubyte> key{ OtherUtil::base64Decode(this->KEY_BASE64) };
+						std::vector<ubyte> iv{ OtherUtil::base64Decode(this->IV_BASE64) };
+
+						auto decrypt_data{ OtherUtil::decrypt_AES_CBC(file_data, key, iv) };
+						//HexDebug(decrypt_data);
+						getGameRecord(decrypt_data);
+						break;
+					}
+				}
+			}
+			catch (...) {
+				// 关闭ZIP文件
+				mz_zip_reader_end(&zip_archive);
+				throw HTTPException("Unknown Error", 500, 1);
+			}
+			// 关闭ZIP文件
+			mz_zip_reader_end(&zip_archive);

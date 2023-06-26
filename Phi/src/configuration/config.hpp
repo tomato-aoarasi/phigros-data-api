@@ -69,6 +69,8 @@ public:
 	inline static std::unordered_map<std::string, DefinedStruct::PhiSongInfo> PhigrosSongInfo{};
 	inline static std::filesystem::path ExecutableFilePath;
 	inline static std::unordered_map<int, std::string> Phis{};
+	inline static bool IsPlanB{ false };
+	inline static std::string PlayerSavePath{};
 };
 
 class Config final{
@@ -126,7 +128,8 @@ public:
 		Parameter::ms_issuer = getConfig()["server"]["token"]["issuer"].as<std::string>();
 		Parameter::ms_port = getConfig()["server"]["port"].as<ushort>();
 		Parameter::ms_concurrency = getConfig()["server"]["concurrency"].as<ubyte>();
-
+		Global::IsPlanB = Config::getConfig()["other"]["plan-b"].as<bool>();
+		Global::PlayerSavePath = Config::getConfig()["other"]["player-save-path"].as<std::string>();
 	}
 	//得到一个YAML配置文件
 	static const YAML::Node& getConfig(void) {
