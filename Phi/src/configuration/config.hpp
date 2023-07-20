@@ -61,12 +61,18 @@ namespace DefinedStruct{
 		std::string song_illustration_path;
 		float rating[5]{ 0.0f,0.0f,0.0f,0.0f,0.0f };
 	};
+
+	struct PhiAvatar {
+		uint32_t sid;
+		std::string avatar_path;
+	};
 }
 
 class Global final {
 	friend class Config;
 public:
 	inline static std::unordered_map<std::string, DefinedStruct::PhiSongInfo> PhigrosSongInfo{};
+	inline static std::unordered_map<std::string, DefinedStruct::PhiAvatar> PhigrosPlayerAvatar{};
 	inline static std::filesystem::path ExecutableFilePath;
 	inline static std::unordered_map<int, std::string> Phis{};
 	inline static bool IsPlanB{ false };

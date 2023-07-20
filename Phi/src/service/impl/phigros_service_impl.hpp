@@ -118,7 +118,17 @@ public:
 			data["content"]["other"]["records"]["EZ"]["clear"] = playerSummary.EZ[0];
 			data["content"]["other"]["records"]["EZ"]["fc"] = playerSummary.EZ[1];
 			data["content"]["other"]["records"]["EZ"]["phi"] = playerSummary.EZ[2];
-			data["content"]["other"]["avatar"] = playerData.avatar;
+
+			std::string avatar_id{ playerData.avatar };
+			if (Global::PhigrosPlayerAvatar.count(avatar_id)) {
+				if (authentication.authority == 5) {
+					data["content"]["other"]["avatarPath"] = Global::PhigrosPlayerAvatar.at(avatar_id).avatar_path;
+					data["content"]["other"]["avatarDbId"] = Global::PhigrosPlayerAvatar.at(avatar_id).sid;
+				}
+				data["content"]["other"]["avatarHasEnable"] = true;
+			}else data["content"]["other"]["avatarHasEnable"] = false;
+
+			data["content"]["other"]["avatar"] = avatar_id;
 			data["content"]["other"]["background"] = playerData.background;
 			data["content"]["other"]["profile"] = playerData.profile;
 		}
@@ -315,7 +325,18 @@ public:
 			data["content"]["other"]["records"]["EZ"]["clear"] = playerSummary.EZ[0];
 			data["content"]["other"]["records"]["EZ"]["fc"] = playerSummary.EZ[1];
 			data["content"]["other"]["records"]["EZ"]["phi"] = playerSummary.EZ[2];
-			data["content"]["other"]["avatar"] = playerData.avatar;
+
+			std::string avatar_id{ playerData.avatar };
+			if (Global::PhigrosPlayerAvatar.count(avatar_id)) {
+				if (authentication.authority == 5) {
+					data["content"]["other"]["avatarPath"] = Global::PhigrosPlayerAvatar.at(avatar_id).avatar_path;
+					data["content"]["other"]["avatarDbId"] = Global::PhigrosPlayerAvatar.at(avatar_id).sid;
+				}
+				data["content"]["other"]["avatarHasEnable"] = true;
+			}
+			else data["content"]["other"]["avatarHasEnable"] = false;
+
+			data["content"]["other"]["avatar"] = avatar_id;
 			data["content"]["other"]["background"] = playerData.background;
 			data["content"]["other"]["profile"] = playerData.profile;
 		}

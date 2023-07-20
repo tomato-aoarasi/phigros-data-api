@@ -15,7 +15,7 @@ server:
     port: 6379
     password: "bkhra571"
   concurrency: 0
-  port: 8299
+  port: 8199
   token:
      secret: HWqBXLYj8$z$ezR9gnihO8K13m#soNN^8WWuHMKDz12Vo6IWb3e6N!M4aHV@tCF3
      issuer: Bing
