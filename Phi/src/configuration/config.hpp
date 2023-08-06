@@ -41,6 +41,29 @@ struct user {
 	unsigned char authority{ 0 };
 };
 
+namespace defined {
+	struct PhiInfoParamStruct {
+		uint8_t mode;
+		std::string sid;
+		int32_t id;
+	};
+
+	struct PhiAliasAddParam {
+		int32_t sid;
+		std::string alias;
+		int32_t related_song_id;
+	};
+
+	struct PhiMatchAlias {
+		std::string query;
+		uint16_t limit{ 20 };
+		uint16_t offset{ 0 };
+		uint16_t hitsPerPage{ 20 };
+		uint16_t page{ 1 };
+		bool showRankingScore{ true };
+	};
+}
+
 #if CORS_OPEN
 using CrowApplication = crow::App<crow::CORSHandler>;
 #else
@@ -68,15 +91,21 @@ namespace DefinedStruct{
 	};
 }
 
-class Global final {
-	friend class Config;
-public:
+namespace Global {
 	inline static std::unordered_map<std::string, DefinedStruct::PhiSongInfo> PhigrosSongInfo{};
 	inline static std::unordered_map<std::string, DefinedStruct::PhiAvatar> PhigrosPlayerAvatar{};
 	inline static std::filesystem::path ExecutableFilePath;
 	inline static std::unordered_map<int, std::string> Phis{};
 	inline static bool IsPlanB{ false };
 	inline static std::string PlayerSavePath{};
+	namespace Meilisearch{
+		bool IsOpen{ false };
+		std::string Url{};
+		std::string Authorization{};
+		namespace Phi {
+			std::string SearchNamespace {"phigros"};
+		}
+	}
 };
 
 class Config final{
@@ -136,6 +165,17 @@ public:
 		Parameter::ms_concurrency = getConfig()["server"]["concurrency"].as<ubyte>();
 		Global::IsPlanB = Config::getConfig()["other"]["plan-b"].as<bool>();
 		Global::PlayerSavePath = Config::getConfig()["other"]["player-save-path"].as<std::string>();
+
+		if (Config::getConfig()["search-engine"]) {
+			if (Config::getConfig()["search-engine"]["meilisearch"]) {
+				Global::Meilisearch::IsOpen = true;
+				Global::Meilisearch::Authorization = Config::getConfig()["search-engine"]["meilisearch"]["authorization"].as<std::string>();
+				Global::Meilisearch::Url = Config::getConfig()["search-engine"]["meilisearch"]["url"].as<std::string>();
+			}
+			if (Config::getConfig()["search-engine"]["elasticsearch"]) {
+
+			}
+		}
 	}
 	//得到一个YAML配置文件
 	static const YAML::Node& getConfig(void) {

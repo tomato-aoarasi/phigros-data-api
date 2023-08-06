@@ -11,6 +11,8 @@
 #include <service/phigros_service.hpp>
 #include <service/impl/phi_taptap_api.hpp>
 #include "configuration/config.hpp"
+#include <cpprest/http_client.h>
+#include <cpprest/json.h>
 
 #ifndef PHIGROS_SERVICE_HPP_IMPL
 #define PHIGROS_SERVICE_HPP_IMPL  
@@ -75,6 +77,40 @@ private:
 		}
 	};
 
+	inline void updateSearch(int32_t id) {
+		Json song_info;
+		SQL_Util::PhiDB << "select sid,id,title from phigros where id = ?" << id >> [&]
+		(std::unique_ptr<std::string> sid_p, int32_t id, std::string title) {
+			if (sid_p)song_info["sid"] = *sid_p;
+			else song_info["sid"] = nullptr;
+
+			song_info["id"] = id;
+			song_info["title"] = title;
+			SQL_Util::PhiDB << "select id,alias from alias where song_id = ?" << id >> [&]
+			(int32_t id, std::string alias) {
+				Json alias_data;
+				song_info["aliases"].emplace_back(Json{
+					{"aliasId", id},
+					{"alias", alias},
+					});
+			};
+		};
+
+		web::http::client::http_client client(U(Global::Meilisearch::Url));
+		// 创建第一个HTTP请求, 添加匹配索引
+		web::http::http_request request_add_index(web::http::methods::POST);
+		request_add_index.set_request_uri("/indexes/"s + Global::Meilisearch::Phi::SearchNamespace + "/documents?primaryKey=id"s);
+		request_add_index.headers().add("Content-Type", "application/json");
+		request_add_index.headers().add("Authorization", "Bearer "s + Global::Meilisearch::Authorization);
+		request_add_index.set_body(web::json::value::parse(song_info.dump()));
+
+		auto response = client.request(request_add_index).get();
+
+		if (response.status_code() >= 300 and response.status_code() < 200) {
+			auto error = response.extract_string().get();
+			throw self::HTTPException(error, 500, 12);
+		}
+	};
 public:
 	virtual ~PhigrosServiceImpl() = default;
 	Json getAll(const UserData& authentication, std::string_view sessionToken) override {
@@ -345,7 +381,6 @@ public:
 		return data;
 	}
 
-
 	Json getRecords(const UserData& authentication, std::string_view sessionToken) override {
 		Json data;
 
@@ -379,6 +414,254 @@ public:
 		data["status"] = 0;
 		return data;
 	};
+
+	Json getAlias(const UserData& authentication, int32_t id) override {
+		Json result;
+		SQL_Util::PhiDB << "select id, alias from alias where song_id = \"?\""
+			<< id
+			>> [&](int32_t id, std::string alias) {
+			Json data{
+				{"id", id},
+				{"alias", alias},
+			};
+			result["content"].emplace_back(data);
+		};
+
+		if (result.is_null()) throw self::HTTPException("", 404, 11);
+		
+		result["songId"] = id;
+
+		return result;
+	};
+	
+	Json documentSongidByAlias(const UserData& authentication, std::string alias) override {
+		Json result;
+		int32_t song_id;
+		SQL_Util::PhiDB << "select song_id from alias where alias = ?"
+			<< alias
+			>> song_id;
+
+		result["songId"] = song_id;
+
+		if (result.is_null()) throw self::HTTPException("", 404, 11);
+
+		return result;
+	};
+
+	Json matchAlias(const defined::PhiMatchAlias& matchAlias) override {
+		Json body{
+			{"q", matchAlias.query},
+			{"limit", matchAlias.limit},
+			{"offset", matchAlias.offset},
+			{"hitsPerPage", matchAlias.hitsPerPage},
+			{"page", matchAlias.page},
+			{"showRankingScore", matchAlias.showRankingScore},
+		}, resp, result{ Json::parse("[]")};
+
+		web::http::client::http_client client(U(Global::Meilisearch::Url));
+		// 创建第一个HTTP请求, 添加匹配索引
+		web::http::http_request request_add_index(web::http::methods::POST);
+		request_add_index.set_request_uri("/indexes/"s + Global::Meilisearch::Phi::SearchNamespace + "/search"s);
+		request_add_index.headers().add("Content-Type", "application/json");
+		request_add_index.headers().add("Authorization", "Bearer "s + Global::Meilisearch::Authorization);
+		request_add_index.set_body(web::json::value::parse(body.dump()));
+
+		auto response = client.request(request_add_index).get();
+
+		if (response.status_code() < 400 and response.status_code() >= 200) {
+			resp = Json::parse(response.extract_json().get().serialize());
+		} else {
+			auto error = response.extract_string().get();
+			throw self::HTTPException(error, 500, 12);
+		}
+
+		// 遍历索引
+		for (auto& index : resp["hits"]) {
+			Json data;
+
+			if (matchAlias.showRankingScore) data["rankingScore"] = index.at("_rankingScore").get<float>();
+
+			data["id"] = index.at("id").get<int32_t>();
+			data["sid"] = index.at("sid").get<std::string>();
+			data["title"] = index.at("title").get<std::string>();
+
+			result.emplace_back(data);
+		}
+
+		return result.dump();
+	}
+
+	Json getSongInfo(const UserData& authentication, const defined::PhiInfoParamStruct& infoParam) override {
+		std::string front_sql{ " \
+select sid,id, title, song_illustration_path, song_audio_path, \
+rating_ez, rating_hd, rating_in, rating_at, rating_lg, rating_sp, \
+note_ez, note_hd, note_in, note_at, note_lg, note_sp,\
+design_ez, design_hd, design_in, design_at, design_lg, design_sp, \
+artist, illustration, duration, bpm, chapter \
+from phigros where " };
+
+		switch (infoParam.mode) {
+		case 0:
+			if (!self::CheckParameterStr(infoParam.sid)) throw self::HTTPException("SQL injection may exist", 403, 8);
+			front_sql += "sid = \""s + infoParam.sid + "\";"s;
+			break;
+		case 1:
+			front_sql += "id = "s + std::to_string(infoParam.id) + ";"s;
+			break;
+		default:
+			throw self::HTTPException("", 400, 10);
+			break;
+		}
+		Json result;
+		SQL_Util::PhiDB << front_sql
+			>> [&](
+				std::unique_ptr<std::string> sid_p, int32_t id, std::string title,
+				std::string song_illustration_path, std::string song_audio_path,
+				std::unique_ptr<float> rating_ez, std::unique_ptr<float> rating_hd, std::unique_ptr<float> rating_in, std::unique_ptr<float> rating_at, std::unique_ptr<float> rating_lg, std::unique_ptr<float> rating_sp,
+				std::unique_ptr<uint16_t> note_ez, std::unique_ptr<uint16_t> note_hd, std::unique_ptr<uint16_t> note_in, std::unique_ptr<uint16_t> note_at, std::unique_ptr<uint16_t> note_lg, std::unique_ptr<uint16_t> note_sp,
+				std::unique_ptr<std::string> design_ez, std::unique_ptr<std::string> design_hd, std::unique_ptr<std::string> design_in, std::unique_ptr<std::string> design_at, std::unique_ptr<std::string> design_lg, std::unique_ptr<std::string> design_sp,
+				std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
+				) {
+					result["sid"] = sid_p ? *sid_p : nullptr;
+					result["id"] = id;
+					result["title"] = title;
+
+					if (authentication.authority == 5)
+					{
+						result["illustrationPath"] = song_illustration_path;
+						result["audioPath"] = song_audio_path;
+					};
+
+					std::array<std::string, 6> levels = { "ez", "hd", "in", "at", "lg", "sp" };
+
+					for (const auto& level : levels) {
+						result["content"][level]["rating"] = nullptr;
+						result["content"][level]["note"] = nullptr;
+						result["content"][level]["design"] = nullptr;
+						result["flag"][level] = false;
+
+						struct {
+							std::unique_ptr<float> rating;
+							std::unique_ptr<uint16_t> note;
+							std::unique_ptr<std::string> design;
+						} rating = { nullptr, nullptr, nullptr };
+
+						if (level == "ez")		rating = { std::move(rating_ez), std::move(note_ez), std::move(design_ez) };
+						else if (level == "hd") rating = { std::move(rating_hd), std::move(note_hd), std::move(design_hd) };
+						else if (level == "in") rating = { std::move(rating_in), std::move(note_in), std::move(design_in) };
+						else if (level == "at") rating = { std::move(rating_at), std::move(note_at), std::move(design_at) };
+						else if (level == "lg") rating = { std::move(rating_lg), std::move(note_lg), std::move(design_lg) };
+						else if (level == "sp") rating = { std::move(rating_sp), std::move(note_sp), std::move(design_sp) };
+
+						if (rating.rating) result["content"][level]["rating"] = *rating.rating;
+						if (rating.note) result["content"][level]["note"] = *rating.note;
+						if (rating.design) result["content"][level]["design"] = *rating.design;
+						if (rating.rating and rating.note and rating.design) result["flag"][level] = true;
+					}
+
+					result["artist"] = artist;
+					result["illustration"] = illustration;
+					result["duration"] = duration;
+					result["bpm"] = bpm;
+					result["chapter"] = chapter;
+		};
+
+		if (result.is_null()) throw self::HTTPException("", 404, 11);
+
+		return result;
+	}
+
+	std::string addAlias(const UserData& authentication, const defined::PhiAliasAddParam& add) override {
+		bool is_existe{ false };
+		if (authentication.authority < 3) throw self::HTTPException("", 401, 6);
+		SQL_Util::PhiDB << "select count(id) from phigros where id = ?;" << add.related_song_id >> is_existe;
+
+		if(!is_existe) throw self::HTTPException("song id doesn't exist", 404, 3);
+		SQL_Util::PhiDB << "insert into alias (alias,song_id) values (?,?);"
+			<< add.alias
+			<< add.related_song_id;
+
+		if (Global::Meilisearch::IsOpen) {
+			this->updateSearch(add.related_song_id);
+		}
+
+		return "ok";
+	}
+
+	std::string delAlias(const UserData& authentication, const defined::PhiAliasAddParam& add) override {
+		bool is_existe{ false };
+		uint32_t songId{};
+		if (authentication.authority < 4) throw self::HTTPException("", 401, 6);
+		SQL_Util::PhiDB << "select count(id),song_id from alias where id = ?;" << add.sid >> [&]
+		(bool count_id, int32_t song_id) {
+			is_existe = count_id;
+			songId = song_id;
+		};
+
+		if(!is_existe) throw self::HTTPException("ID doesn't exist", 404, 3);
+		SQL_Util::PhiDB << "delete from alias where id = ?;" << add.sid;
+
+		if (Global::Meilisearch::IsOpen) {
+			this->updateSearch(songId);
+		}
+
+		return "ok";
+	}
+
+	std::string asyncMatch(void) override {
+		Json body;
+		SQL_Util::PhiDB << "select sid,id,title from phigros" >> [&]
+		(std::unique_ptr<std::string> sid_p, int32_t id, std::string title) {
+			Json song_info;
+
+			if (sid_p)song_info["sid"] = *sid_p;
+			else song_info["sid"] = nullptr;
+
+			song_info["id"] = id;
+			song_info["title"] = title;
+			SQL_Util::PhiDB << "select id,alias from alias where song_id = ?" << id >> [&]
+			(int32_t id, std::string alias) {
+				Json alias_data;
+				song_info["aliases"].emplace_back(Json{
+					{"aliasId", id},
+					{"alias", alias},
+					});
+			};
+			body.emplace_back(song_info);
+		};
+
+		web::http::client::http_client client(U(Global::Meilisearch::Url));
+		// 创建第一个HTTP请求, 添加匹配索引
+		web::http::http_request request_add_index(web::http::methods::POST);
+		request_add_index.set_request_uri("/indexes/"s + Global::Meilisearch::Phi::SearchNamespace + "/documents?primaryKey=id"s);
+		request_add_index.headers().add("Content-Type", "application/json");
+		request_add_index.headers().add("Authorization", "Bearer "s + Global::Meilisearch::Authorization);
+		request_add_index.set_body(web::json::value::parse(body.dump()));
+
+		// 创建第二个HTTP请求设置只对特定数据索引
+		web::http::http_request request_searchable_attributes(web::http::methods::PUT);
+		request_searchable_attributes.set_request_uri("/indexes/"s + Global::Meilisearch::Phi::SearchNamespace + "/settings/searchable-attributes"s);
+		request_searchable_attributes.headers().add("Authorization", "Bearer "s + Global::Meilisearch::Authorization);
+		request_searchable_attributes.set_body(web::json::value::parse("[\"aliases.alias\",\"title\"]"));
+
+
+		// 发送多个HTTP请求并获取响应(异步操作)
+		std::vector<pplx::task<web::http::http_response>> tasks;
+		tasks.push_back(client.request(request_add_index));
+		tasks.push_back(client.request(request_searchable_attributes));
+
+		pplx::when_all(tasks.begin(), tasks.end()).then([](std::vector<web::http::http_response> responses) {
+			// 处理响应
+			for (const auto& resp : responses) {
+				if (resp.status_code() >= 300 and resp.status_code() < 200) {
+					auto error = resp.extract_string().get();
+					throw self::HTTPException(error, 500, 12);
+				}
+			}
+		}).wait();
+
+		return "ok";
+	}
 private:
 };
 

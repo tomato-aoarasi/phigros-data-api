@@ -1,15 +1,22 @@
 log:
-  logger-name: daily_logger
-  filename: logs/daily.txt
+  logger-name: "daily_logger"
+  filename: "logs/daily.txt"
   hour: 2
   minute: 30
+
 db:
   path:
-    local: ./localDB.db
-    phi: ./PhigrosInfo.db
-    phi-player: ./PlayerRecords.db
+    local: "./localDB.db"
+    phi: "./PhigrosInfo.db"
+    phi-player: "./PlayerRecords.db"
+
+search-engine:
+    meilisearch: 
+        url: "http://127.0.0.1:7700"
+        authorization: "1145141919810893"
+
 server:
-  data-url: https://rak3ffdi.cloud.tds1.tapapis.cn
+  data-url: "https://rak3ffdi.cloud.tds1.tapapis.cn"
   redis:
     ip: "127.0.0.2"
     port: 6379
@@ -17,14 +24,15 @@ server:
   concurrency: 0
   port: 8199
   token:
-     secret: HWqBXLYj8$z$ezR9gnihO8K13m#soNN^8WWuHMKDz12Vo6IWb3e6N!M4aHV@tCF3
-     issuer: Bing
+     secret: "HWqBXLYj8$z$ezR9gnihO8K13m#soNN^8WWuHMKDz12Vo6IWb3e6N!M4aHV@tCF3"
+     issuer: "Bing"
+
 other:
   port: 8499
   exec-port-min: 8200
   exec-port-max: 8204
   unified-threads: 0
-  proxy-uri: http://127.0.0.1
-  resource-path: ./public/
-  player-save-path: ./save
+  proxy-uri: "http://127.0.0.1"
+  resource-path: "./public/"
+  player-save-path: "./save"
   plan-b: true
