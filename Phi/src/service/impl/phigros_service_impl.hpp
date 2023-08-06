@@ -456,7 +456,7 @@ public:
 			{"hitsPerPage", matchAlias.hitsPerPage},
 			{"page", matchAlias.page},
 			{"showRankingScore", matchAlias.showRankingScore},
-		}, resp, result{ Json::parse("[]")};
+		}, resp, result;
 
 		web::http::client::http_client client(U(Global::Meilisearch::Url));
 		// 创建第一个HTTP请求, 添加匹配索引
@@ -487,7 +487,7 @@ public:
 
 			result.emplace_back(data);
 		}
-
+		if (result.is_null()) result = Json::parse("[]");
 		return result.dump();
 	}
 
