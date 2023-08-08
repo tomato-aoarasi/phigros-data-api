@@ -528,6 +528,60 @@ public:
 			return resp;
 		});
 
+		CROW_ROUTE(m_app, "/phi/rating")
+			.methods("GET"_method)([&](const crow::request& req) {
+			crow::response resp;
+			resp.set_header("Content-Type", "application/json");
+			try {
+				auto authentication{ getUser(req.get_header_value("Authorization")) };
+				if (authentication.authority < 1)
+				{
+					throw self::HTTPException("", 401, 6);
+				}
+				float rating1{}, rating2{ -1.0f };
+
+				if (OtherUtil::verifyParam(req, "rating1")) {
+					rating1 = std::stof(req.url_params.get("rating1"));
+				} else {
+					throw self::HTTPException("parameter 'rating1' required and parameter cannot be empty.", 400, 7);
+				}
+				if (OtherUtil::verifyParam(req, "rating2")) {
+					rating2 = std::stof(req.url_params.get("rating2"));
+				}
+
+				// 将 JSON 数据作为响应体返回
+				resp.write(this->m_phigros->getRating(authentication, rating1, rating2).dump(amount_spaces));
+
+				return resp;
+			}catch (const self::HTTPException& e) {
+				if (e.getMessage().empty())
+				{
+					resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), "", e.getStatus()).dump(amount_spaces));
+				}
+				else {
+					resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage(), e.getStatus()).dump(amount_spaces));
+				}
+				LogSystem::logError(std::format("[Phigros]best ------ msg: {} / code: {} / status: {}", e.what(), e.getCode(), e.getStatus()));
+				resp.code = e.getCode();
+			}
+			catch (const self::TimeoutException& e) {
+				LogSystem::logError("[PhigrosAPI]best ------ API请求超时");
+				resp.write(StatusCodeHandle::getSimpleJsonResult(408, "Data API request timeout", 2).dump(amount_spaces));
+				resp.code = 408;
+			}
+			catch (const std::runtime_error& e) {
+				LogSystem::logError(std::format("[PhigrosAPI]best ------ msg: {} / code: {}", e.what(), 500));
+				resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
+				resp.code = 500;
+			}
+			catch (const std::exception& e) {
+				LogSystem::logError(std::format("[PhigrosAPI]best ------ msg: {} / code: {}", e.what(), 500));
+				resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
+				resp.code = 500;
+			}
+			return resp;
+				});
+
 		if (Global::Meilisearch::IsOpen) {
 			CROW_ROUTE(m_app, "/phi/asyncMatch")
 				.methods("POST"_method)([&](const crow::request& req) {

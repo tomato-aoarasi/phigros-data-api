@@ -25,6 +25,8 @@ public:
 	virtual Json matchAlias(const defined::PhiMatchAlias&) = 0;
 
 	virtual Json getSongInfo(const UserData&, const defined::PhiInfoParamStruct&) = 0;
+
+	virtual Json getRating(const UserData&,float, float) = 0;
 	
 	virtual std::string addAlias(const UserData&, const defined::PhiAliasAddParam&) = 0;
 	virtual std::string delAlias(const UserData&, const defined::PhiAliasAddParam&) = 0;

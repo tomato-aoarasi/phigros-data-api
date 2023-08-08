@@ -571,7 +571,7 @@ from phigros where " };
 					result["chapter"] = chapter;
 		};
 
-		if (result.is_null()) throw self::HTTPException("", 404, 11);
+		if (result.is_null()) result = Json::parse("[]");
 
 		return result;
 	}
@@ -667,6 +667,83 @@ from phigros where " };
 
 		return "ok";
 	}
+
+	Json getRating(const UserData& authentication, float rating1, float rating2 = -1) override {
+		Json result;
+
+		if (rating1 < 0){
+			throw self::HTTPException("", 400, 11);
+		}
+		if (rating2 < 0){
+			rating2 = rating1;
+		}
+
+		std::string match_diff{ std::format(R"(
+SELECT id,
+  CASE
+    WHEN rating_ez BETWEEN {0} AND {1} THEN 'rating_ez'
+    WHEN rating_hd BETWEEN {0} AND {1} THEN 'rating_hd'
+    WHEN rating_in BETWEEN {0} AND {1} THEN 'rating_in'
+    WHEN rating_at BETWEEN {0} AND {1} THEN 'rating_at'
+    WHEN rating_lg BETWEEN {0} AND {1} THEN 'rating_lg'
+    WHEN rating_sp BETWEEN {0} AND {1} THEN 'rating_sp'
+  END AS matched_rating_field
+FROM phigros
+WHERE 
+  rating_ez BETWEEN {0} AND {1} OR 
+  rating_hd BETWEEN {0} AND {1} OR 
+  rating_in BETWEEN {0} AND {1} OR 
+  rating_at BETWEEN {0} AND {1} OR 
+  rating_lg BETWEEN {0} AND {1} OR 
+  rating_sp BETWEEN {0} AND {1};
+)", rating1 - 0.01f, rating2 + 0.01f) };
+
+		SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string matched_rating_field) {
+			std::string level = matched_rating_field.substr(7);
+
+			std::string sql_command{ std::format(R"(select sid,id, title, song_illustration_path, song_audio_path, 
+rating_{0}, note_{0}, design_{0}, 
+artist, illustration, duration, bpm, chapter 
+from phigros where id = ?;)", level) };
+
+			SQL_Util::PhiDB << sql_command << id
+				>> [&](
+					std::unique_ptr<std::string> sid_p, int32_t id, std::string title,
+					std::string song_illustration_path, std::string song_audio_path,
+					float rating, uint16_t note, std::string design,
+					std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
+					) {
+						Json data;
+						if (sid_p)data["sid"] = *sid_p;
+						else data["sid"] = nullptr;
+						data["id"] = id;
+						data["title"] = title;
+
+						if (authentication.authority == 5)
+						{
+							data["illustrationPath"] = song_illustration_path;
+							data["audioPath"] = song_audio_path;
+						};
+
+						data["rating"] = rating;
+						data["note"] = note;
+						data["design"] = design;
+
+						data["level"] = level;
+						data["artist"] = artist;
+						data["illustration"] = illustration;
+						data["duration"] = duration;
+						data["bpm"] = bpm;
+						data["chapter"] = chapter;
+
+						result.emplace_back(data);
+			};
+		};
+
+		if (result.is_null()) result = Json::parse("[]");
+
+		return result;
+	};
 private:
 };
 
