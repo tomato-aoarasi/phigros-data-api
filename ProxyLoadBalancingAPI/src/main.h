@@ -236,7 +236,7 @@ inline void start(void) {
             LogSystem::logInfo("添加授权用户");
             try {
                 auto authentication{ getUser(req.get_header_value("Authorization")) };
-                if (authentication.authority > 5 || authentication.authority < 4)
+                if (authentication.authority < 5)
                 {
                     throw self::HTTPException("", 401);
                 }
@@ -275,7 +275,7 @@ inline void start(void) {
             LogSystem::logInfo("用户列表获取");
             try {
                 auto authentication{ getUser(req.get_header_value("Authorization")) };
-                if (authentication.authority > 5 || authentication.authority < 4)
+                if (authentication.authority < 5)
                 {
                     throw self::HTTPException("", 401);
                 }
@@ -318,7 +318,7 @@ inline void start(void) {
             LogSystem::logInfo("修改权限");
             try {
                 auto authentication{ getUser(req.get_header_value("Authorization")) };
-                if (authentication.authority > 5 || authentication.authority < 4)
+                if (authentication.authority < 5)
                 {
                     throw self::HTTPException("", 401);
                 }
