@@ -207,12 +207,19 @@ inline void start(void) {
                 concurrency::streams::stringstreambuf buffer;
                 response.body().read_to_end(buffer).get();
                 body = buffer.collection();
-
-                data_body = Json::parse(body);
+                try {
+                    data_body = Json::parse(body);
+                }
+                catch (const Json::parse_error&) {
+                    resp.code = 200;
+                    resp.write(body);
+                    LogSystem::logInfo("query success");
+                    return resp;
+                }
                 break;
             }
             resp.code = 200;
-            resp.write(data_body.dump(2));
+            resp.write(data_body.dump());
             LogSystem::logInfo("query success");
             return resp;
         }catch (const self::HTTPException& e) {

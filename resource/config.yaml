@@ -29,8 +29,8 @@ server:
 
 other:
   port: 8499
-  exec-port-min: 8200
-  exec-port-max: 8204
+  exec-port-min: 8300
+  exec-port-max: 8304
   unified-threads: 0
   proxy-uri: "http://127.0.0.1"
   resource-path: "./public/"

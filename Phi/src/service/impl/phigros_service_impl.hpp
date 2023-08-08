@@ -417,7 +417,7 @@ public:
 
 	Json getAlias(const UserData& authentication, int32_t id) override {
 		Json result;
-		SQL_Util::PhiDB << "select id, alias from alias where song_id = \"?\""
+		SQL_Util::PhiDB << "select id, alias from alias where song_id = ?"
 			<< id
 			>> [&](int32_t id, std::string alias) {
 			Json data{
