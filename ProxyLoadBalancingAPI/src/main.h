@@ -124,8 +124,7 @@ inline void start(void) {
                 clients.emplace_back(uri);
             }
 
-            std::string body;
-            Json data_body;
+            std::string body, result_body;
             while (1) {
                 ++retry;
                 auto& client = clients.at(Global::cyclic_query_value % clients.size());
@@ -181,7 +180,7 @@ inline void start(void) {
                             response.body().read_to_end(buffer).get();
                             body = buffer.collection();
 
-                            data_body = Json::parse(body);
+                             Json data_body = Json::parse(body);
                             BODY_SELECT;
                         }
                         catch (const self::HTTPException&) {
@@ -199,27 +198,18 @@ inline void start(void) {
                     response.body().read_to_end(buffer).get();
                     body = buffer.collection();
 
-                    data_body = Json::parse(body);
+                    Json data_body = Json::parse(body);
 
                     BODY_SELECT;
                 }
 
                 concurrency::streams::stringstreambuf buffer;
                 response.body().read_to_end(buffer).get();
-                body = buffer.collection();
-                try {
-                    data_body = Json::parse(body);
-                }
-                catch (const Json::parse_error&) {
-                    resp.code = 200;
-                    resp.write(body);
-                    LogSystem::logInfo("query success");
-                    return resp;
-                }
+                result_body = buffer.collection();
                 break;
             }
             resp.code = 200;
-            resp.write(data_body.dump());
+            resp.write(result_body);
             LogSystem::logInfo("query success");
             return resp;
         }catch (const self::HTTPException& e) {
