@@ -106,7 +106,7 @@ private:
 
 		auto response = client.request(request_add_index).get();
 
-		if (response.status_code() >= 300 and response.status_code() < 200) {
+		if (response.status_code() >= 300 or response.status_code() < 200) {
 			auto error = response.extract_string().get();
 			throw self::HTTPException(error, 500, 12);
 		}
@@ -657,7 +657,7 @@ from phigros where " };
 		pplx::when_all(tasks.begin(), tasks.end()).then([](std::vector<web::http::http_response> responses) {
 			// ´¦ÀíÏìÓ¦
 			for (const auto& resp : responses) {
-				if (resp.status_code() >= 300 and resp.status_code() < 200) {
+				if (resp.status_code() >= 300 or resp.status_code() < 200) {
 					auto error = resp.extract_string().get();
 					throw self::HTTPException(error, 500, 12);
 				}
