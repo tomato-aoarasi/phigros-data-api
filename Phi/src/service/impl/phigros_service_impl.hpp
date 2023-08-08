@@ -526,7 +526,8 @@ from phigros where " };
 				std::unique_ptr<std::string> design_ez, std::unique_ptr<std::string> design_hd, std::unique_ptr<std::string> design_in, std::unique_ptr<std::string> design_at, std::unique_ptr<std::string> design_lg, std::unique_ptr<std::string> design_sp,
 				std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
 				) {
-					result["sid"] = sid_p ? *sid_p : nullptr;
+					if (sid_p)result["sid"] = *sid_p;
+					else result["sid"] = nullptr;
 					result["id"] = id;
 					result["title"] = title;
 
