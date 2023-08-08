@@ -56,10 +56,10 @@ namespace defined {
 
 	struct PhiMatchAlias {
 		std::string query;
-		uint16_t limit{ 20 };
-		uint16_t offset{ 0 };
-		uint16_t hitsPerPage{ 20 };
-		uint16_t page{ 1 };
+		int32_t limit{ 20 };
+		int32_t offset{ 0 };
+		int32_t hitsPerPage{ 20 };
+		int32_t page{ 1 };
 		bool showRankingScore{ true };
 	};
 }

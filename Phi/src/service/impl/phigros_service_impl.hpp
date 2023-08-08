@@ -458,6 +458,7 @@ public:
 			{"showRankingScore", matchAlias.showRankingScore},
 		}, resp, result;
 
+
 		web::http::client::http_client client(U(Global::Meilisearch::Url));
 		// 创建第一个HTTP请求, 添加匹配索引
 		web::http::http_request request_add_index(web::http::methods::POST);
@@ -482,9 +483,12 @@ public:
 			if (matchAlias.showRankingScore) data["rankingScore"] = index.at("_rankingScore").get<float>();
 
 			data["id"] = index.at("id").get<int32_t>();
-			data["sid"] = index.at("sid").get<std::string>();
-			data["title"] = index.at("title").get<std::string>();
 
+			if (index["sid"].is_null()) data["sid"] = nullptr;
+			else data["sid"] = index.at("sid").get<std::string>();
+			
+			data["title"] = index.at("title").get<std::string>();
+			data["aliases"] = index.at("aliases");
 			result.emplace_back(data);
 		}
 		if (result.is_null()) result = Json::parse("[]");

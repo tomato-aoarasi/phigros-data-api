@@ -578,10 +578,6 @@ public:
 				crow::response resp;
 				resp.set_header("Content-Type", "application/json");
 				try {
-					const std::array<std::string,6> param_list{
-						"query", "limit", "offset", "hitsPerPage", "page", "showRankingScore"
-					};
-
 					defined::PhiMatchAlias match_alias;
 					Json data{ Json::parse(req.body) };
 					std::exchange(data, data[0]);
