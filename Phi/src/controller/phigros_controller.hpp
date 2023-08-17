@@ -146,6 +146,7 @@ public:
 					}
 					/* EZ:0, HD:1, IN:2, AT:3, Auto: 4 */
 					unsigned char difficulty{ 4 };
+					bool info{ false };
 					std::string songid{ "" };
 
 					if (OtherUtil::verifyParam(req, "songid")) {
@@ -162,9 +163,12 @@ public:
 					if (OtherUtil::verifyParam(req, "level")) {
 						difficulty = std::stoul(req.url_params.get("level"));
 					}
+					if (OtherUtil::verifyParam(req, "info")) {
+						info = static_cast<bool>(std::stoi(req.url_params.get("info")));
+					}
 
 					// 将 JSON 数据作为响应体返回
-					resp.write(this->m_phigros->getBest(authentication, sessionToken, songid, difficulty).dump(amount_spaces));
+					resp.write(this->m_phigros->getBest(authentication, sessionToken, songid, difficulty, info).dump(amount_spaces));
 
 
 					return resp;

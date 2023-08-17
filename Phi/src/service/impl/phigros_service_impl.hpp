@@ -294,7 +294,7 @@ public:
 		return data;
 	};
 
-	Json getBest(const UserData& authentication, std::string_view sessionToken, const std::string& song_id, unsigned char difficulty) override {
+	Json getBest(const UserData& authentication, std::string_view sessionToken, const std::string& song_id, unsigned char difficulty, bool info) override {
 		Json data;
 
 		self::PhiTaptapAPI phiAPI(sessionToken);
@@ -319,10 +319,10 @@ public:
 			rate{ Global::PhigrosSongInfo[song_id].rating[difficulty]};
 		if (acc >= 70) rks = (std::pow((acc - 55) / 45, 2)) * rate;
 
-		const std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
-
+		std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
+		auto& level{ levels[difficulty] };
 		data["content"]["record"]["songid"] = song_id;
-		data["content"]["record"]["difficulty"] = levels[difficulty] /* record.difficulty */ ;
+		data["content"]["record"]["difficulty"] = level /* record.difficulty */ ;
 		data["content"]["record"]["acc"] = acc;
 		data["content"]["record"]["score"] = record.score;
 		data["content"]["record"]["isfc"] = record.is_fc;
@@ -376,6 +376,29 @@ public:
 			data["content"]["other"]["avatar"] = avatar_id;
 			data["content"]["other"]["background"] = playerData.background;
 			data["content"]["other"]["profile"] = playerData.profile;
+		}
+
+		if(info){
+			std::transform(level.begin(), level.end(), level.begin(), ::tolower);
+			std::string sql{ std::format("SELECT id,title,rating_{0},note_{0},design_{0},artist,illustration,duration,bpm,chapter FROM phigros WHERE ",level) };
+			sql += "sid = ?;";
+
+			data["content"]["info"]["sid"] = song_id;
+			SQL_Util::PhiDB << sql << song_id >> [&](int32_t id, std::string title,
+				float rating, uint16_t note, std::string design,
+				std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
+				) {
+				data["content"]["info"]["id"] = id;
+				data["content"]["info"]["title"] = title;
+				data["content"]["info"]["rating"] = rating;
+				data["content"]["info"]["note"] = note;
+				data["content"]["info"]["design"] = design;
+				data["content"]["info"]["artist"] = artist;
+				data["content"]["info"]["illustration"] = illustration;
+				data["content"]["info"]["duration"] = duration;
+				data["content"]["info"]["bpm"] = bpm;
+				data["content"]["info"]["chapter"] = chapter;
+			};
 		}
 
 		data["status"] = 0;

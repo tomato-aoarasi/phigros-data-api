@@ -26,7 +26,7 @@ namespace SQL_Util {
 	inline sqlite::database PhiDB(Config::getConfig()["db"]["path"]["phi"].as<std::string>());
 	inline sqlite::database PlayerRdDB(Config::getConfig()["db"]["path"]["phi-player"].as<std::string>());
 	inline void initialized(void) {
-		PhiDB << "PRAGMA journal_mode=WAL;";
+		// PhiDB << "PRAGMA journal_mode=WAL;";
 	};
 };
 #endif
