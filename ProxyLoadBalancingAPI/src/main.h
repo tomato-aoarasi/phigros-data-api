@@ -49,16 +49,11 @@ inline void init(void) {
 
     self::DB::LocalDB << "DELETE FROM ProcessInfo;";
 
-    //const uint32_t PID = system(command.c_str());   // 运行命令   
-    //std::cout << PID << std::endl;
-    
+    int port_min { Config::config_yaml["other"]["exec-port-min"].as<int>() },
+        port_max { Config::config_yaml["other"]["exec-port-max"].as<int>() },
+        unified_threads{ Config::config_yaml["other"]["unified-threads"].as<int>() };
 
-    auto port_min { Config::config_yaml["other"]["exec-port-min"].as<uint16_t>() };
-    auto port_max { Config::config_yaml["other"]["exec-port-max"].as<uint16_t>() };
-
-    uint16_t unified_threads{ Config::config_yaml["other"]["unified-threads"].as<uint16_t>() };
-
-    for (uint16_t port{ port_min }; port <= port_max; ++port) {
+    for (int port{ port_min }; port <= port_max; ++port) {
         std::string command{ std::format("{}/CrowAPI --port={} --concurrency={} --sid={} &",std::filesystem::current_path().c_str(),port,unified_threads,Global:: proxy_count) };
         auto status_code { std::system(command.c_str()) };
 

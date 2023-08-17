@@ -11,7 +11,6 @@
 #include <chrono>
 #include <bcrypt.h>
 #include "service/arcaea_service.hpp"
-#include "common/utils/sql_handle.hpp"
 #include "jwt-cpp/jwt.h"
 #include "common/utils/http_util.hpp"
 

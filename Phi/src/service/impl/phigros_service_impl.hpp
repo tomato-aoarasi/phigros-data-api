@@ -13,6 +13,7 @@
 #include "configuration/config.hpp"
 #include <cpprest/http_client.h>
 #include <cpprest/json.h>
+#include <common/utils/prevent_inject.hpp>
 
 #ifndef PHIGROS_SERVICE_HPP_IMPL
 #define PHIGROS_SERVICE_HPP_IMPL  

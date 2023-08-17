@@ -115,7 +115,7 @@ public:
 	protected:
 		inline static std::string ms_secret{}, ms_issuer{};
 		inline static ushort ms_port{};
-		inline static ubyte ms_concurrency{};
+		inline static int ms_concurrency{};
 	public:
 		static const std::string& getSecret(void){
 			return ms_secret;
@@ -129,7 +129,7 @@ public:
 			return ms_port;
 		}
 
-		static const ubyte& getConcurrency(void){
+		static const int& getConcurrency(void){
 			return ms_concurrency;
 		}
 	private:
@@ -161,7 +161,7 @@ public:
 		Parameter::ms_secret = getConfig()["server"]["token"]["secret"].as<std::string>();
 		Parameter::ms_issuer = getConfig()["server"]["token"]["issuer"].as<std::string>();
 		Parameter::ms_port = getConfig()["server"]["port"].as<ushort>();
-		Parameter::ms_concurrency = getConfig()["server"]["concurrency"].as<ubyte>();
+		Parameter::ms_concurrency = getConfig()["server"]["concurrency"].as<int>();
 		Global::IsPlanB = Config::getConfig()["other"]["plan-b"].as<bool>();
 		Global::PlayerSavePath = Config::getConfig()["other"]["player-save-path"].as<std::string>();
 

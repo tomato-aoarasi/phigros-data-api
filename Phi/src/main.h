@@ -135,7 +135,7 @@ inline void start(std::string_view p, std::string_view c, std::string_view sid){
         issuer{ Config::Parameter::getIssuer()};
     unsigned int pid = getpid();
     const ushort port{ p == "65536" ? Config::Parameter::getPort() : static_cast<ushort>(std::stoul(p.data())) };
-    const ubyte concurrency{ c.empty() ? Config::Parameter::getConcurrency() : static_cast<ubyte>(std::stoul(c.data())) };
+    const int concurrency{ c.empty() ? Config::Parameter::getConcurrency() : static_cast<int>(std::stoi(c.data())) };
 
     LogSystem::logInfo(std::format("[{}] port: {} / concurrency: {} / pid: {}",sid, port, concurrency, pid));
 
@@ -178,10 +178,12 @@ inline void start(std::string_view p, std::string_view c, std::string_view sid){
 
     // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-    if (concurrency != 0)
+    if (concurrency > 0)
         app.concurrency(concurrency).run_async();
-    else
+    else if (concurrency == 0)
         app.multithreaded().run_async();
+    else 
+        app.multithreaded().run();
 }
 
 #endif
