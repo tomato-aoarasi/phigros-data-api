@@ -506,11 +506,11 @@ from phigros where " };
 
 		switch (infoParam.mode) {
 		case 0:
-			if (!self::CheckParameterStr(infoParam.sid)) throw self::HTTPException("SQL injection may exist", 403, 8);
-			front_sql += "sid = \""s + infoParam.sid + "\";"s;
+			if (!self::CheckParameterStr(infoParam.song_id)) throw self::HTTPException("SQL injection may exist", 403, 8);
+			front_sql += "sid = \""s + infoParam.song_id + "\";"s;
 			break;
 		case 1:
-			front_sql += "id = "s + std::to_string(infoParam.id) + ";"s;
+			front_sql += "id = "s + infoParam.song_id + ";"s;
 			break;
 		default:
 			throw self::HTTPException("", 400, 10);

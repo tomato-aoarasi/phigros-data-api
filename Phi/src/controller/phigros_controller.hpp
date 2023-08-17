@@ -369,40 +369,36 @@ public:
 				});
 
 		CROW_ROUTE(m_app, "/phi/song")
-			.methods("POST"_method)([&](const crow::request& req) {
+			.methods("GET"_method)([&](const crow::request& req) {
 			crow::response resp;
 			resp.set_header("Content-Type", "application/json");
 			try {
-				Json data{ Json::parse(req.body) };
-				std::exchange(data, data[0]);
-
 				// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
 				auto authentication{ getUser(req.get_header_value("Authorization")) };
 				if (authentication.authority == 0) {
 					throw self::HTTPException("", 401, 6);
 				}
-
-				defined::PhiInfoParamStruct info_param
-				{
-					.mode = 1
-				};
-
-				if (data.count("mode")) {
-					info_param.mode = data.at("mode").get<uint8_t>();
-				}
-
+				
 				// 0: sid, 1: id(default)
-				switch (info_param.mode) {
-				case 0:
-					info_param.sid = data.at("id").get<std::string>();
-					break;
-				case 1:
-					info_param.id = data.at("id").get<int32_t>();
-					break;
-				default:
-					throw self::HTTPException("", 400, 10);
-					break;
+				defined::PhiInfoParamStruct info_param{.mode=0};
+
+				std::string songid{ "" };
+
+				if (OtherUtil::verifyParam(req, "songid")) {
+					songid = req.url_params.get("songid");
 				}
+				else {
+					throw self::HTTPException("parameter 'songid' required and parameter cannot be empty.", 400, 7);
+				}
+
+				try {
+					std::stoi(songid);
+					info_param.mode = 1;
+				}
+				catch (...) {
+					info_param.mode = 0;
+				}
+				info_param.song_id = songid;
 
 				// 将 JSON 数据作为响应体返回
 				resp.write(this->m_phigros->getSongInfo(authentication, info_param).dump(amount_spaces));

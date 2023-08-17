@@ -44,8 +44,7 @@ struct user {
 namespace defined {
 	struct PhiInfoParamStruct {
 		uint8_t mode;
-		std::string sid;
-		int32_t id;
+		std::string song_id;
 	};
 
 	struct PhiAliasAddParam {
