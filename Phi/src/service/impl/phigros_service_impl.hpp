@@ -171,7 +171,7 @@ public:
 		}
 
 		for (const auto& [key, value] : Global::PhigrosSongInfo) {
-			std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
+			// std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
 			//std::cout << "\n=====================\n( " << key << " )\n";
 			auto content{ phi[key] };
 			// <= 4为有LG但是在计算b19并不会包含lg
@@ -692,6 +692,164 @@ from phigros where " };
 		return "ok";
 	}
 
+	Json getBatch(const UserData& authentication, std::string_view sessionToken, float rating1, float rating2) override {
+		Json result;
+
+		self::PhiTaptapAPI phiAPI(sessionToken);
+
+		auto phi{ phiAPI.getPlayerRecord() };
+
+		{
+			Json data;
+			auto playerSummary{ phiAPI.GetSummary() };
+			auto playerData{ phiAPI.getUserData() };
+
+			// 玩家记录
+			player_records(sessionToken, playerSummary);
+
+			data["playerNickname"] = phiAPI.getNickname();
+			data["challengeModeRank"] = playerSummary.ChallengeModeRank;
+			data["rankingScore"] = playerSummary.RankingScore;
+			data["updateTime"] = playerSummary.updatedAt;
+			data["timestamp"] = playerSummary.timestamp;
+			{
+				data["other"]["records"]["AT"]["clear"] = playerSummary.AT[0];
+				data["other"]["records"]["AT"]["fc"] = playerSummary.AT[1];
+				data["other"]["records"]["AT"]["phi"] = playerSummary.AT[2];
+				data["other"]["records"]["IN"]["clear"] = playerSummary.IN[0];
+				data["other"]["records"]["IN"]["fc"] = playerSummary.IN[1];
+				data["other"]["records"]["IN"]["phi"] = playerSummary.IN[2];
+				data["other"]["records"]["HD"]["clear"] = playerSummary.HD[0];
+				data["other"]["records"]["HD"]["fc"] = playerSummary.HD[1];
+				data["other"]["records"]["HD"]["phi"] = playerSummary.HD[2];
+				data["other"]["records"]["EZ"]["clear"] = playerSummary.EZ[0];
+				data["other"]["records"]["EZ"]["fc"] = playerSummary.EZ[1];
+				data["other"]["records"]["EZ"]["phi"] = playerSummary.EZ[2];
+
+				std::string avatar_id{ playerData.avatar };
+				if (Global::PhigrosPlayerAvatar.count(avatar_id)) {
+					if (authentication.authority == 5) {
+						data["other"]["avatarPath"] = Global::PhigrosPlayerAvatar.at(avatar_id).avatar_path;
+						data["other"]["avatarDbId"] = Global::PhigrosPlayerAvatar.at(avatar_id).sid;
+					}
+					data["other"]["avatarHasEnable"] = true;
+				}
+				else data["other"]["avatarHasEnable"] = false;
+
+				data["other"]["avatar"] = avatar_id;
+				data["other"]["background"] = playerData.background;
+				data["other"]["profile"] = playerData.profile;
+			}
+			result["playerInfo"] = data;
+		}
+
+		if (rating1 < 0) {
+			throw self::HTTPException("", 400, 11);
+		}
+		if (rating2 < 0) {
+			rating2 = rating1;
+		}
+
+		std::map<std::string, std::multimap<float, Json, KeyComparator>>final_map;
+		for (float rating{ rating1 }; rating < rating2 + 0.01; rating += 0.1) {
+			std::string rating_syn{ OtherUtil::retainDecimalPlaces(rating, 1) };
+			std::multimap<float, Json, KeyComparator> rksSort;
+			std::string match_diff{ std::format(R"(
+SELECT id,
+  CASE
+    WHEN rating_ez BETWEEN {0} AND {1} THEN 'rating_ez'
+    WHEN rating_hd BETWEEN {0} AND {1} THEN 'rating_hd'
+    WHEN rating_in BETWEEN {0} AND {1} THEN 'rating_in'
+    WHEN rating_at BETWEEN {0} AND {1} THEN 'rating_at'
+  END AS matched_rating_field
+FROM phigros
+WHERE 
+  rating_ez BETWEEN {0} AND {1} OR 
+  rating_hd BETWEEN {0} AND {1} OR 
+  rating_in BETWEEN {0} AND {1} OR 
+  rating_at BETWEEN {0} AND {1};)", rating - 0.01f, rating + 0.01f) };
+
+			SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string matched_rating_field) {
+				std::string level = matched_rating_field.substr(7);
+
+				std::string sql_command{ std::format(R"(select sid,id, title, song_illustration_path, song_audio_path, 
+	rating_{0}, note_{0}, design_{0}, 
+	artist, illustration, duration, bpm, chapter 
+	from phigros where id = ?;)", level) };
+
+				SQL_Util::PhiDB << sql_command << id
+					>> [&](
+						std::unique_ptr<std::string> sid_p, int32_t id, std::string title,
+						std::string song_illustration_path, std::string song_audio_path,
+						float rating, uint16_t note, std::string design,
+						std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
+						) {
+						Json data;
+
+						float rks{ 0.0f };
+
+						if (sid_p) {
+							std::string sid{ *sid_p };
+							data["info"]["level"] = level;
+							bool played_level{ false };
+
+							std::unordered_map<std::string, int> levels = {
+								{"ez", 0},
+								{"hd", 1},
+								{"in", 2},
+								{"at", 3}
+							};
+
+							try {
+								auto record{ phi.at(sid).at(levels.at(level)) };
+								played_level = true;
+
+								unsigned int score{ record.score };
+								float
+									acc{ record.acc };
+								bool is_fc{ record.is_fc };
+								if (acc >= 70) rks = (std::pow((acc - 55) / 45, 2)) * rating;
+								data["record"]["acc"] = acc;
+								data["record"]["score"] = score;
+								data["record"]["isfc"] = is_fc;
+								data["record"]["rks"] = rks;
+							} catch (...) { };
+
+							data["playedLevel"] = played_level;
+							data["info"]["sid"] = sid;
+							data["info"]["id"] = id;
+							data["info"]["title"] = title;
+
+							if (authentication.authority == 5)
+							{
+								data["info"]["illustrationPath"] = song_illustration_path;
+								data["info"]["audioPath"] = song_audio_path;
+							};
+
+							data["info"]["rating"] = rating;
+							data["info"]["note"] = note;
+							data["info"]["design"] = design;
+							data["info"]["artist"] = artist;
+							data["info"]["illustration"] = illustration;
+							data["info"]["duration"] = duration;
+							data["info"]["bpm"] = bpm;
+							data["info"]["chapter"] = chapter;
+						}
+
+						rksSort.insert(std::make_pair(rks, data));
+				};
+			};
+			final_map[rating_syn] = rksSort;
+		}
+
+		for (const auto& [rating, soft_map] : final_map) for(const auto& [_, data] : soft_map) result["batch"][rating].emplace_back(data);
+		//result["batch"][rating_syn].emplace_back(data);
+
+		if (result.is_null()) result = Json::parse("[]");
+
+		return result;
+	}
+
 	Json getRating(const UserData& authentication, float rating1, float rating2 = -1) override {
 		Json result;
 
@@ -702,7 +860,8 @@ from phigros where " };
 			rating2 = rating1;
 		}
 
-		std::string match_diff{ std::format(R"(
+		for (float rating{ rating1 }; rating < rating2 + 0.01; rating += 0.1) {
+			std::string match_diff{ std::format(R"(
 SELECT id,
   CASE
     WHEN rating_ez BETWEEN {0} AND {1} THEN 'rating_ez'
@@ -720,17 +879,18 @@ WHERE
   rating_at BETWEEN {0} AND {1} OR 
   rating_lg BETWEEN {0} AND {1} OR 
   rating_sp BETWEEN {0} AND {1};
-)", rating1 - 0.01f, rating2 + 0.01f) };
+)", rating - 0.01f, rating + 0.01f) };
 
-		SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string matched_rating_field) {
-			std::string level = matched_rating_field.substr(7);
+				SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string matched_rating_field) {
+				std::string level = matched_rating_field.substr(7);
 
-			std::string sql_command{ std::format(R"(select sid,id, title, song_illustration_path, song_audio_path, 
-rating_{0}, note_{0}, design_{0}, 
-artist, illustration, duration, bpm, chapter 
-from phigros where id = ?;)", level) };
+				std::string sql_command{ std::format(R"(select sid,id, title, song_illustration_path, song_audio_path, 
+	rating_{0}, note_{0}, design_{0}, 
+	artist, illustration, duration, bpm, chapter 
+	from phigros where id = ?;)", level) };
+				std::string rating_syn{ OtherUtil::retainDecimalPlaces(rating, 1) };
 
-			SQL_Util::PhiDB << sql_command << id
+				SQL_Util::PhiDB << sql_command << id
 				>> [&](
 					std::unique_ptr<std::string> sid_p, int32_t id, std::string title,
 					std::string song_illustration_path, std::string song_audio_path,
@@ -738,6 +898,7 @@ from phigros where id = ?;)", level) };
 					std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
 					) {
 						Json data;
+						
 						if (sid_p)data["sid"] = *sid_p;
 						else data["sid"] = nullptr;
 						data["id"] = id;
@@ -760,10 +921,10 @@ from phigros where id = ?;)", level) };
 						data["bpm"] = bpm;
 						data["chapter"] = chapter;
 
-						result.emplace_back(data);
+						result[rating_syn].emplace_back(data);
+				};
 			};
-		};
-
+		}
 		if (result.is_null()) result = Json::parse("[]");
 
 		return result;

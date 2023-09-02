@@ -26,6 +26,8 @@ public:
 
 	virtual Json getSongInfo(const UserData&, const defined::PhiInfoParamStruct&) = 0;
 
+	virtual Json getBatch(const UserData&, std::string_view, float, float) = 0;
+
 	virtual Json getRating(const UserData&,float, float) = 0;
 	
 	virtual std::string addAlias(const UserData&, const defined::PhiAliasAddParam&) = 0;
