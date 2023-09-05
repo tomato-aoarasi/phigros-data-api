@@ -19,6 +19,7 @@
 #define PHIGROS_SERVICE_HPP_IMPL  
 class PhigrosServiceImpl : public PhigrosService {
 private:
+	const std::array<std::string, 5> disk_capacity_unit{ "KiB", "MiB", "GiB", "TiB", "PiB" };
 	struct KeyComparator {
 		bool operator()(const auto& lhs, const auto& rhs) const {
 			return lhs > rhs;
@@ -132,7 +133,6 @@ public:
 
 		//std::cout << "\n=====================\n";
 		auto playerSummary{ phiAPI.GetSummary()};
-		auto playerData{ phiAPI.getUserData() };
 
 		// Íæ¼Ò¼ÇÂ¼
 		player_records(sessionToken, playerSummary);
@@ -143,6 +143,7 @@ public:
 		data["content"]["updateTime"] = playerSummary.updatedAt;
 		data["content"]["timestamp"] = playerSummary.timestamp;
 		{
+			auto playerData{ phiAPI.getUserData() };
 			data["content"]["other"]["records"]["AT"]["clear"] = playerSummary.AT[0];
 			data["content"]["other"]["records"]["AT"]["fc"] = playerSummary.AT[1];
 			data["content"]["other"]["records"]["AT"]["phi"] = playerSummary.AT[2];
@@ -168,6 +169,10 @@ public:
 			data["content"]["other"]["avatar"] = avatar_id;
 			data["content"]["other"]["background"] = playerData.background;
 			data["content"]["other"]["profile"] = playerData.profile;
+
+			for (size_t index{0}; index < disk_capacity_unit.size(); ++index){
+				data["content"]["other"]["data"][disk_capacity_unit.at(index)] = phiAPI.getGameProgress().data.at(index);
+			}
 		}
 
 		for (const auto& [key, value] : Global::PhigrosSongInfo) {
@@ -376,6 +381,10 @@ public:
 			data["content"]["other"]["avatar"] = avatar_id;
 			data["content"]["other"]["background"] = playerData.background;
 			data["content"]["other"]["profile"] = playerData.profile;
+
+			for (size_t index{ 0 }; index < disk_capacity_unit.size(); ++index) {
+				data["content"]["other"]["data"][disk_capacity_unit.at(index)] = phiAPI.getGameProgress().data.at(index);
+			}
 		}
 
 		if(info){
@@ -739,6 +748,10 @@ from phigros where " };
 				data["other"]["avatar"] = avatar_id;
 				data["other"]["background"] = playerData.background;
 				data["other"]["profile"] = playerData.profile;
+
+				for (size_t index{ 0 }; index < disk_capacity_unit.size(); ++index) {
+					data["content"]["other"]["data"][disk_capacity_unit.at(index)] = phiAPI.getGameProgress().data.at(index);
+				}
 			}
 			result["playerInfo"] = data;
 		}

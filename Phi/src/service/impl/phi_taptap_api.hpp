@@ -29,7 +29,7 @@
 
 using ubyte = unsigned char;
 
-#if DEBUG
+#if 0
 void HexDebug(const auto& content) {
 	for (const auto& data : content)
 	{
@@ -100,6 +100,57 @@ namespace self {
 		bool getBit(uint8_t data, uint8_t index) {
 			return (data & (1 << index)) != 0;
 		}
+
+		void setPosition(size_t pos) {
+			this->pos_ = pos;
+		}
+	};
+
+	struct GameProgress {
+		uint8_t isFirstRun{ 0 };
+		uint8_t legacyChapterFinished{ 0 };
+		uint8_t alreadyShowCollectionTip{ 0 };
+		uint8_t alreadyShowAutoUnlockINTip{ 0 };
+		uint8_t completed{ 0 };
+		uint8_t songUpdateInfo{ 0 };
+		short challengeModeRank{ 0 };
+		std::array<short, 5> data{ 0,0,0,0,0 };
+		uint8_t unlockFlagOfSpasmodic{};
+		uint8_t unlockFlagOfIgallta{ 0 };
+		uint8_t unlockFlagOfRrharil{ 0 };
+		uint8_t flagOfSongRecordKey{ 0 };
+		uint8_t randomVersionUnlocked{ 0 };
+		uint8_t chapter8UnlockBegin{ 0 };
+		uint8_t chapter8UnlockSecondPhase{ 0 };
+		uint8_t chapter8Passed{ 0 };
+		uint8_t chapter8SongUnlocked{ 0 };
+
+#if 0
+		void Print() {
+			std::cout // << std::hex << std::uppercase << std::setw(2) << std::setfill('0') 
+				<< static_cast<int>(isFirstRun) << ", "
+				<< static_cast<int>(legacyChapterFinished) << ", "
+				<< static_cast<int>(alreadyShowCollectionTip) << ", "
+				<< static_cast<int>(alreadyShowAutoUnlockINTip) << ", "
+				<< static_cast<int>(completed) << ", "
+				<< static_cast<int>(songUpdateInfo) << ", "
+				<< "challengeModeRank: " << challengeModeRank << ", \n"
+				<< "data: " << data[0] << ", "
+				<< data[1] << ", "
+				<< data[2] << ", "
+				<< data[3] << ", "
+				<< data[4] << ", \n"
+				<< static_cast<int>(unlockFlagOfSpasmodic) << ", "
+				<< static_cast<int>(unlockFlagOfIgallta) << ", "
+				<< static_cast<int>(unlockFlagOfRrharil) << ", "
+				<< static_cast<int>(flagOfSongRecordKey) << ", "
+				<< static_cast<int>(randomVersionUnlocked) << ", "
+				<< static_cast<int>(chapter8UnlockBegin) << ", "
+				<< static_cast<int>(chapter8UnlockSecondPhase) << ", "
+				<< static_cast<int>(chapter8Passed) << ", "
+				<< static_cast<int>(chapter8SongUnlocked) << std::endl;
+		};
+#endif
 	};
 
 	struct SongScore {
@@ -224,6 +275,9 @@ namespace self {
 			{"X-LC-Key", "Qr9AEqtuoSVS3zeD6iVbM4ZC0AtkJcQ89tywVyi0"},
 			{"Content-Type", "application/json"}
 		};
+
+		// progress信息
+		GameProgress m_gameProgress{};
 
 		// 曲目id/难度(0/1/2/3/4)/信息
 		std::unordered_map<std::string, std::unordered_map<ubyte, SongScore>> m_player_record{};
@@ -507,6 +561,10 @@ namespace self {
 
 		auto& getUserData() const {
 			return this->m_user_data;
+		}
+
+		auto& getGameProgress() const {
+			return this->m_gameProgress;
 		}
 	};
 }

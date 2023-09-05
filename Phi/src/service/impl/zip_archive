@@ -6,7 +6,7 @@
 
 					auto filename{ std::string(file_stat.m_filename) };
 
-					//std::cout << "filename: " << filename << "\nsize: " << file_stat.m_uncomp_size << std::endl;
+					// std::cout << "filename: " << filename << "\nsize: " << file_stat.m_uncomp_size << std::endl;
 
 					
 					if (filename == "user")
@@ -74,6 +74,62 @@
 						//HexDebug(decrypt_data);
 						getGameRecord(decrypt_data);
 						break;
+					}
+
+					if(filename == "gameProgress")
+					{
+						std::vector<uint8_t> game_progress(file_stat.m_uncomp_size);
+						mz_zip_reader_extract_to_mem(&zip_archive, file_stat.m_file_index, game_progress.data(), game_progress.size(), 0);
+						game_progress.erase(game_progress.begin());
+
+						// 编码解码
+						std::vector<uint8_t> key{ OtherUtil::base64Decode(this->KEY_BASE64) };
+						std::vector<uint8_t> iv{ OtherUtil::base64Decode(this->IV_BASE64) };
+						auto decrypt_data{ OtherUtil::decrypt_AES_CBC(game_progress, key, iv) };
+						
+						// HexDebug(decrypt_data);
+
+						BinaryReader reader(decrypt_data);
+
+						this->m_gameProgress.isFirstRun = reader.ReadByte();
+						this->m_gameProgress.legacyChapterFinished = reader.ReadByte();
+						this->m_gameProgress.alreadyShowCollectionTip = reader.ReadByte();
+						this->m_gameProgress.alreadyShowAutoUnlockINTip = reader.ReadByte();
+						if (this->m_gameProgress.alreadyShowAutoUnlockINTip != 0) {
+							this->m_gameProgress.completed = reader.ReadByte();
+							this->m_gameProgress.songUpdateInfo = reader.ReadByte();
+						}
+						auto challengeModeRankFrontByte{ reader.ReadByte() };
+						if (challengeModeRankFrontByte != 0) {
+							this->m_gameProgress.challengeModeRank = static_cast<short>((reader.ReadByte() << 8) | challengeModeRankFrontByte);
+						}
+
+						for (auto& data : this->m_gameProgress.data) {
+							auto front_byte_data{ reader.ReadByte() };
+							// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(front_byte_data) << ",";
+							if (front_byte_data != 0) {
+								auto back_byte_data{ reader.ReadByte() };
+								// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(back_byte_data) << std::endl;
+								if (back_byte_data != 0) {
+									data = (back_byte_data - 1) * 128 + front_byte_data;
+								} else {
+									data = front_byte_data;
+									reader.setPosition(reader.getPosition() - 1);
+								}
+							}
+						}
+
+						this->m_gameProgress.unlockFlagOfSpasmodic = reader.ReadByte();
+						this->m_gameProgress.unlockFlagOfIgallta = reader.ReadByte();
+						this->m_gameProgress.unlockFlagOfRrharil = reader.ReadByte();
+						this->m_gameProgress.flagOfSongRecordKey = reader.ReadByte();
+						this->m_gameProgress.randomVersionUnlocked = reader.ReadByte();
+						this->m_gameProgress.chapter8UnlockBegin = reader.ReadByte();
+						this->m_gameProgress.chapter8UnlockSecondPhase = reader.ReadByte();
+						if (this->m_gameProgress.chapter8UnlockBegin != 0) {
+							this->m_gameProgress.chapter8Passed = reader.ReadByte();
+							this->m_gameProgress.chapter8SongUnlocked = reader.ReadByte();
+						}
 					}
 				}
 			}
