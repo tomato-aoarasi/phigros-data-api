@@ -48,9 +48,6 @@ include_directories(${BOOST_INCLUDE_PATH})
 set(HIREDIS_INCLUDE_PATH /usr/include/hiredis)
 include_directories(${HIREDIS_INCLUDE_PATH})
 
-# miniz
-include_directories(${VCPKG_INCLUDE}/miniz)
-
 # OpenSSL
 include_directories(${OPENSSL_INCLUDE_DIR})
 
@@ -61,7 +58,6 @@ include_directories(${SQLITE_MODERN_INCLUDE_PATH}/include)
 # openssl封装库
 find_package(cryptopp CONFIG REQUIRED)
 # 对zip解压的支持
-find_package(miniz CONFIG REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(spdlog REQUIRED)
@@ -74,9 +70,8 @@ find_package(Crow)
 find_package(Boost REQUIRED COMPONENTS coroutine)
 find_path(SQLITE_MODERN_CPP_INCLUDE_DIRS "sqlite_modern_cpp.h")
 # find_package(libgo CONFIG REQUIRED)
-# find_package(Poco REQUIRED Net)
-# find_package(Poco REQUIRED JSON)
-# find_package(Poco REQUIRED Util)
+#POCO引入
+find_package(Poco REQUIRED COMPONENTS Foundation Zip Util)
 
 add_definitions(-DCROW_ENABLE_SSL)
 set(CROW_ENABLE_SSL ON)
@@ -93,6 +88,8 @@ include_directories(${BCRYPT_PATH}/include)
 
 set(SQLITE_PP_PATH     ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/sqlitepp)
 include_directories(${SQLITE_PP_PATH}/include)
+
+include_directories(${Poco_INCLUDE_DIRS}})
 
 # reids封装库
 find_library(REDIS_PLUS_PLUS_LIB redis++)
@@ -118,9 +115,9 @@ add_executable (${PROJECT_NAME} ${SRC_LIST})
 #Poco::Net Poco::JSON Poco::Util
 #target_include_directories(${PROJECT_NAME} private ${QRENCODE_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCV_LIBS} ${OPENSSL_LIBRARIES} ${QRENCODE_LIBRARY_RELEASE} 
+target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCV_LIBS} ${OPENSSL_LIBRARIES} ${QRENCODE_LIBRARY_RELEASE} ${Poco_LIBRARIES}
 ${SQLITE_MODERN_CPP_INCLUDE_DIRS} ${REDIS_PLUS_PLUS_LIB}
-Crow::Crow cpprestsdk::cpprest hiredis nlohmann_json::nlohmann_json miniz::miniz
+Crow::Crow cpprestsdk::cpprest hiredis nlohmann_json::nlohmann_json
 fmt::fmt sqlite3 unofficial::sqlite3::sqlite3 yaml-cpp Boost::coroutine
 spdlog::spdlog cryptopp::cryptopp #libgo::libgo
 libbcrypt.a libSQLitePP.a)

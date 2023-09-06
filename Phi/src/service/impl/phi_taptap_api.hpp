@@ -19,17 +19,21 @@
 #include <iomanip>
 #include <cmath>
 #include "httplib.h"
-#include <miniz.h>
 #include "configuration/config.hpp"
 #include "common/utils/other_util.hpp"
 #include <cryptopp/cryptlib.h>
+#include <Poco/Zip/ZipStream.h>
+#include <Poco/Zip/ZipException.h>
+#include <Poco/Zip/ZipArchive.h> 
+#include <Poco/Zip/ZipLocalFileHeader.h> 
+#include <Poco/StreamCopier.h> 
 
 #ifndef PHI_TAPTAP_API_HPP
 #define PHI_TAPTAP_API_HPP  
 
 using ubyte = unsigned char;
 
-#if 0
+#if 1
 void HexDebug(const auto& content) {
 	for (const auto& data : content)
 	{
@@ -296,6 +300,36 @@ namespace self {
 			KEY_BASE64{ "6Jaa0qVAJZuXkZCLiOa/Ax5tIZVu+taKUN1V1nqwkks=" },
 			IV_BASE64{ "Kk/wisgNYwcAV8WVGMgyUw==" };
 
+		std::vector<uint8_t> unzip(std::istringstream& iss, const Poco::Zip::ZipLocalFileHeader& header) {
+			Poco::Zip::ZipInputStream zipin(iss, header);
+			std::ostringstream out(std::ios::binary);
+			Poco::StreamCopier::copyStream(zipin, out);
+			std::string new_str{ out.str() };
+
+			std::vector<uint8_t> vec(new_str.begin() + 1, new_str.end());
+
+			// 编码解码
+			std::vector<ubyte> key{ OtherUtil::base64Decode(this->KEY_BASE64) };
+			std::vector<ubyte> iv{ OtherUtil::base64Decode(this->IV_BASE64) };
+
+			return OtherUtil::decrypt_AES_CBC(vec, key, iv);
+		}
+
+		std::vector<uint8_t> unzip(std::ifstream& ifs, const Poco::Zip::ZipLocalFileHeader& header) {
+			Poco::Zip::ZipInputStream zipin(ifs, header);
+			std::ostringstream out(std::ios::binary);
+			Poco::StreamCopier::copyStream(zipin, out);
+			std::string new_str{ out.str() };
+
+			std::vector<uint8_t> vec(new_str.begin() + 1, new_str.end());
+
+			// 编码解码
+			std::vector<ubyte> key{ OtherUtil::base64Decode(this->KEY_BASE64) };
+			std::vector<ubyte> iv{ OtherUtil::base64Decode(this->IV_BASE64) };
+
+			return OtherUtil::decrypt_AES_CBC(vec, key, iv);
+		}
+
 		void getGameRecord(std::vector<ubyte>& data) {
 			size_t data_size{ data.size() };
 			std::unordered_map<std::string, std::unordered_map<ubyte, SongScore>> records;
@@ -372,12 +406,133 @@ namespace self {
 			//std::cout << "data size: " << data_size << ",position: " << reader.getPosition() << std::endl;
 			this->m_player_record = std::move(records);
 		}
+
+		void selectControl(std::vector<uint8_t>& data,std::string_view key) {
+			if (key == "gameKey") {
+				// pass
+			} else if (key == "gameProgress") {
+				BinaryReader reader(data);
+
+				this->m_gameProgress.isFirstRun = reader.ReadByte();
+				this->m_gameProgress.legacyChapterFinished = reader.ReadByte();
+				this->m_gameProgress.alreadyShowCollectionTip = reader.ReadByte();
+				this->m_gameProgress.alreadyShowAutoUnlockINTip = reader.ReadByte();
+				if (this->m_gameProgress.alreadyShowAutoUnlockINTip != 0) {
+					this->m_gameProgress.completed = reader.ReadByte();
+					this->m_gameProgress.songUpdateInfo = reader.ReadByte();
+				}
+				auto challengeModeRankFrontByte{ reader.ReadByte() };
+				if (challengeModeRankFrontByte != 0) {
+					this->m_gameProgress.challengeModeRank = static_cast<short>((reader.ReadByte() << 8) | challengeModeRankFrontByte);
+				}
+
+				for (auto& data : this->m_gameProgress.data) {
+					auto front_byte_data{ reader.ReadByte() };
+					// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(front_byte_data) << ",";
+					if (front_byte_data != 0) {
+						auto back_byte_data{ reader.ReadByte() };
+						// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(back_byte_data) << std::endl;
+						if (back_byte_data != 0) {
+							data = (back_byte_data - 1) * 128 + front_byte_data;
+						}
+						else {
+							data = front_byte_data;
+							reader.setPosition(reader.getPosition() - 1);
+						}
+					}
+				}
+
+				this->m_gameProgress.unlockFlagOfSpasmodic = reader.ReadByte();
+				this->m_gameProgress.unlockFlagOfIgallta = reader.ReadByte();
+				this->m_gameProgress.unlockFlagOfRrharil = reader.ReadByte();
+				this->m_gameProgress.flagOfSongRecordKey = reader.ReadByte();
+				this->m_gameProgress.randomVersionUnlocked = reader.ReadByte();
+				this->m_gameProgress.chapter8UnlockBegin = reader.ReadByte();
+				this->m_gameProgress.chapter8UnlockSecondPhase = reader.ReadByte();
+				if (this->m_gameProgress.chapter8UnlockBegin != 0) {
+					this->m_gameProgress.chapter8Passed = reader.ReadByte();
+					this->m_gameProgress.chapter8SongUnlocked = reader.ReadByte();
+				}
+			} else if (key == "gameRecord") {
+				getGameRecord(data);
+			} else if (key == "settings") {
+				// pass
+			} else if (key == "user") {
+				auto data_size{ data.size() };
+
+				int string_size{ 128 * (data[2] - 1) + data[1] },
+					init_pos{ 3 };
+				if (string_size >= data_size) {
+					init_pos = 2;
+					string_size = data[1];
+				}
+				try {
+					if (static_cast<unsigned long>(init_pos) + string_size > data_size) {
+						throw std::runtime_error("Profile Array Bound Error");
+					}
+					std::string profile(data.begin() + init_pos, data.begin() + init_pos + string_size);
+					this->m_user_data.profile = std::move(profile);
+					auto pos{ std::move(init_pos) + std::move(string_size) };
+					auto avatar_size{ data[pos] };
+
+					if (static_cast<unsigned long>(pos) + avatar_size + 1 > data_size) {
+						throw std::out_of_range("Avatar Array Bound Error");
+					}
+					std::string avatar(data.begin() + pos + 1, data.begin() + pos + avatar_size + 1);
+					this->m_user_data.avatar = std::move(avatar);
+					pos += std::move(avatar_size) + 1;
+					auto background_size{ data[pos] };
+					if (static_cast<unsigned long>(pos) + std::move(background_size) + 1 > data_size) {
+						throw std::out_of_range("Background Array Bound Error");
+					}
+					std::string background(data.begin() + pos + 1, data.begin() + pos + std::move(background_size) + 1);
+					this->m_user_data.background = std::move(background);
+				}
+				catch (const std::out_of_range& e) {
+					LogSystem::logError(e.what());
+				}
+				catch (const std::runtime_error& e) {
+					LogSystem::logError(e.what());
+				}
+			} else {
+				// pass
+			}
+		};
+
+		void collectSave(const std::string& body) {
+			std::istringstream iss(body, std::ios::binary);
+			Poco::Zip::ZipArchive PocoZipArchive(iss);
+
+			for (auto iterator{ PocoZipArchive.headerBegin() }; iterator != PocoZipArchive.headerEnd(); ++iterator) {
+				const auto& header = iterator->second;
+				std::string filename = header.getFileName();
+				// Poco::UInt32 fileSize = header.getUncompressedSize();
+				// std::cout << "filename: " << filename << "\nsize: " << fileSize << std::endl;
+				auto data{ unzip(iss, header) };
+				selectControl(data, filename);
+			}
+		};
+
+		void collectSave(const std::filesystem::path& path) {
+			std::ifstream ifs(path, std::ios::binary);
+			Poco::Zip::ZipArchive PocoZipArchive(ifs);
+
+			for (auto iterator{ PocoZipArchive.headerBegin() }; iterator != PocoZipArchive.headerEnd(); ++iterator) {
+				const auto& header = iterator->second;
+				std::string filename = header.getFileName();
+				// Poco::UInt32 fileSize = header.getUncompressedSize();
+				// std::cout << "filename: " << filename << "\nsize: " << fileSize << std::endl;
+				auto data{ unzip(ifs, header) };
+				selectControl(data, filename);
+			}
+		};
 	public:
 		PhiTaptapAPI(std::string_view sessionToken) {
 			std::string
-				filename{ "save" },
-				dir_path{ Global::PlayerSavePath + "/" + sessionToken.data() + "/" },
-				file_path{ dir_path + filename };
+				filename{ "save" };
+			
+			std::filesystem::path dir_path{ Global::PlayerSavePath + "/" + sessionToken.data() + "/" },
+				file_path{ dir_path / filename };
 
 
 			httplib::Error err{ httplib::Error::Success };
@@ -426,21 +581,13 @@ namespace self {
 				}
 
 				get_player_info_thread.get();
-			}
-			catch (const nlohmann::json::type_error&) {
+			} catch (const nlohmann::json::type_error&) {
 				// plan B启动
 				if (Global::IsPlanB)
 				{
 					LogSystem::logInfo("悲观主义的一套planB");
 
-					mz_zip_archive zip_archive{};
-					memset(&zip_archive, 0, sizeof(zip_archive));
-					mz_bool status{ mz_zip_reader_init_file(&zip_archive, file_path.c_str(), 0) };
-					if (!status) {
-						mz_zip_reader_end(&zip_archive);
-						throw HTTPException("Decompression Failed", 500, 5);
-					}
-					#include "zip_archive"
+					collectSave(file_path);
 					// 突然终止
 					return;
 				}
@@ -523,20 +670,12 @@ namespace self {
 				}
 				else {
 					file.close();
-					throw HTTPException("Failed to save file to "s + file_path, 500, 1);
+					throw HTTPException("Failed to save file to "s + file_path.string(), 500, 1);
 				}
 			}
 			// ==========================================
 
-			mz_zip_archive zip_archive {};
-			memset(&zip_archive, 0, sizeof(zip_archive));
-
-			mz_bool status{ mz_zip_reader_init_mem(&zip_archive, result_zip->body.data(), result_zip->body.size(), 0)};
-			if (!status) {
-				mz_zip_reader_end(&zip_archive);
-				throw HTTPException("Decompression Failed", 500, 5);
-			}
-			#include "zip_archive"
+			collectSave(result_zip->body);
 		};
 
 		~PhiTaptapAPI() noexcept {
