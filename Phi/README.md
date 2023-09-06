@@ -21,5 +21,5 @@
 > jwt-cpp:https://github.com/Thalhammer/jwt-cpp<br>
 > Bcrypt.cpp:https://github.com/hilch/Bcrypt.cpp<br>
 > sqlite_modern_cpp:https://github.com/SqliteModernCpp/sqlite_modern_cpp<br>
-> miniz:https://github.com/richgel999/miniz<br>
+> Poco:https://github.com/richgel999/miniz<br>
 omit...
