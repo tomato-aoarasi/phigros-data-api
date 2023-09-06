@@ -33,7 +33,7 @@
 
 using ubyte = unsigned char;
 
-#if 1
+#if 0
 void HexDebug(const auto& content) {
 	for (const auto& data : content)
 	{
