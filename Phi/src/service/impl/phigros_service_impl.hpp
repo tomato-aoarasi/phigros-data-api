@@ -434,7 +434,7 @@ public:
 		SQL_Util::PlayerRdDB << "select sid,rks,challengeModeRank,timestamp,nickname from \"" + st +  "\";"
 			>> [&](uint32_t sid, double rks, uint16_t challengeModeRank, std::time_t timestamp, std::string nickname) {
 
-			data["content"].emplace_back(
+			data["content"]["data"].emplace_back(
 				Json{
 				  {"sid", sid},
 				  {"rks", rks},
@@ -442,6 +442,33 @@ public:
 				  {"timestamp", timestamp},
 				  {"nickname", nickname},
 				});
+		};
+
+		std::string statisticalChallengeModeRankDataSQL { std::format(R"(
+SELECT 
+  COUNT(CASE WHEN challengeModeRank >= 0 AND challengeModeRank < 100 THEN 1 END) AS white,
+  COUNT(CASE WHEN challengeModeRank >= 100 AND challengeModeRank < 200 THEN 1 END) AS green,
+  COUNT(CASE WHEN challengeModeRank >= 200 AND challengeModeRank < 300 THEN 1 END) AS blue,
+  COUNT(CASE WHEN challengeModeRank >= 300 AND challengeModeRank < 400 THEN 1 END) AS red,
+  COUNT(CASE WHEN challengeModeRank >= 400 AND challengeModeRank < 500 THEN 1 END) AS gold,
+  COUNT(CASE WHEN challengeModeRank >= 500 AND challengeModeRank < 600 THEN 1 END) AS rainbow,
+  MAX(challengeModeRank) AS max,
+  MIN(challengeModeRank) AS min,
+  MAX(CASE WHEN challengeModeRank = (SELECT MAX(challengeModeRank) FROM "{0}") THEN timestamp END) AS max_timestamp,
+  MIN(CASE WHEN challengeModeRank = (SELECT MIN(challengeModeRank) FROM "{0}") THEN timestamp END) AS min_timestamp
+FROM "{0}";)",st) };
+
+		SQL_Util::PlayerRdDB << statisticalChallengeModeRankDataSQL >> [&](int white, int green, int blue, int red, int gold, int rainbow, uint16_t max, uint16_t min, time_t max_timestamp, time_t min_timestamp) {
+			data["content"]["statisticalChallengeModeRank"]["whiteCount"] = white;
+			data["content"]["statisticalChallengeModeRank"]["greenCount"] = green;
+			data["content"]["statisticalChallengeModeRank"]["blueCount"] = blue;
+			data["content"]["statisticalChallengeModeRank"]["redCount"] = red;
+			data["content"]["statisticalChallengeModeRank"]["goldCount"] = gold;
+			data["content"]["statisticalChallengeModeRank"]["rainbowCount"] = rainbow;
+			data["content"]["statisticalChallengeModeRank"]["max"] = max;
+			data["content"]["statisticalChallengeModeRank"]["min"] = min;
+			data["content"]["statisticalChallengeModeRank"]["timestampMax"] = max_timestamp;
+			data["content"]["statisticalChallengeModeRank"]["timestampMin"] = min_timestamp;
 		};
 
 		data["status"] = 0;
