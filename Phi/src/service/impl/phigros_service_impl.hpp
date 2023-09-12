@@ -457,22 +457,39 @@ SELECT
   MAX(challengeModeRank % 100) AS indistinguishable_max,
   MIN(challengeModeRank % 100) AS indistinguishable_min,
   MAX(CASE WHEN challengeModeRank = (SELECT MAX(challengeModeRank) FROM "{0}") THEN timestamp END) AS max_timestamp,
-  MIN(CASE WHEN challengeModeRank = (SELECT MIN(challengeModeRank) FROM "{0}") THEN timestamp END) AS min_timestamp
+  MIN(CASE WHEN challengeModeRank = (SELECT MIN(challengeModeRank) FROM "{0}") THEN timestamp END) AS min_timestamp,
+  MAX(rks) AS maxRKS,
+  MIN(rks) AS minRKS,
+  MAX(CASE WHEN rks = (SELECT MAX(rks) FROM "{0}") THEN timestamp END) AS rks_max_timestamp,
+  MIN(CASE WHEN rks = (SELECT MIN(rks) FROM "{0}") THEN timestamp END) AS rks_min_timestamp
 FROM "{0}";)",st) };
 
-		SQL_Util::PlayerRdDB << statisticalChallengeModeRankDataSQL >> [&](int white, int green, int blue, int red, int gold, int rainbow, uint16_t max, uint16_t min, uint16_t indistinguishable_max, uint16_t indistinguishable_min, time_t max_timestamp, time_t min_timestamp) {
-			data["content"]["statisticalChallengeModeRank"]["whiteCount"] = white;
-			data["content"]["statisticalChallengeModeRank"]["greenCount"] = green;
-			data["content"]["statisticalChallengeModeRank"]["blueCount"] = blue;
-			data["content"]["statisticalChallengeModeRank"]["redCount"] = red;
-			data["content"]["statisticalChallengeModeRank"]["goldCount"] = gold;
-			data["content"]["statisticalChallengeModeRank"]["rainbowCount"] = rainbow;
-			data["content"]["statisticalChallengeModeRank"]["max"] = max;
-			data["content"]["statisticalChallengeModeRank"]["min"] = min;
-			data["content"]["statisticalChallengeModeRank"]["indistinguishableMax"] = indistinguishable_max;
-			data["content"]["statisticalChallengeModeRank"]["indistinguishableMin"] = indistinguishable_min;
-			data["content"]["statisticalChallengeModeRank"]["timestampMax"] = max_timestamp;
-			data["content"]["statisticalChallengeModeRank"]["timestampMin"] = min_timestamp;
+		SQL_Util::PlayerRdDB << statisticalChallengeModeRankDataSQL >> [&](int white, int green, int blue, int red, int gold, int rainbow,
+			uint16_t max, uint16_t min, uint16_t indistinguishable_max, uint16_t indistinguishable_min, 
+			time_t max_timestamp, time_t min_timestamp,
+			double max_rks, double min_rks,
+			time_t rks_max_timestamp, time_t rks_min_timestamp
+			) {
+			{
+				data["content"]["statisticalChallengeModeRank"]["whiteCount"] = white;
+				data["content"]["statisticalChallengeModeRank"]["greenCount"] = green;
+				data["content"]["statisticalChallengeModeRank"]["blueCount"] = blue;
+				data["content"]["statisticalChallengeModeRank"]["redCount"] = red;
+				data["content"]["statisticalChallengeModeRank"]["goldCount"] = gold;
+				data["content"]["statisticalChallengeModeRank"]["rainbowCount"] = rainbow;
+				data["content"]["statisticalChallengeModeRank"]["max"] = max;
+				data["content"]["statisticalChallengeModeRank"]["min"] = min;
+				data["content"]["statisticalChallengeModeRank"]["indistinguishableMax"] = indistinguishable_max;
+				data["content"]["statisticalChallengeModeRank"]["indistinguishableMin"] = indistinguishable_min;
+				data["content"]["statisticalChallengeModeRank"]["timestampMax"] = max_timestamp;
+				data["content"]["statisticalChallengeModeRank"]["timestampMin"] = min_timestamp;
+			}
+			{
+				data["content"]["statisticalRKS"]["maxRKS"] = max_rks;
+				data["content"]["statisticalRKS"]["minRKS"] = min_rks;
+				data["content"]["statisticalRKS"]["rksTimestampMax"] = rks_max_timestamp;
+				data["content"]["statisticalRKS"]["rksTimestampMin"] = rks_min_timestamp;
+			}
 		};
 
 		data["status"] = 0;
