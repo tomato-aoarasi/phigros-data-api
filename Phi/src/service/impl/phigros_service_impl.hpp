@@ -569,7 +569,13 @@ FROM "{0}";)",st) };
 			else data["sid"] = index.at("sid").get<std::string>();
 			
 			data["title"] = index.at("title").get<std::string>();
-			data["aliases"] = index.at("aliases");
+
+			if (index.count("aliases")){
+				data["aliases"] = index.at("aliases");
+			} else {
+				data["aliases"] = json::array();
+			}
+
 			result.emplace_back(data);
 		}
 		if (result.is_null()) result = Json::parse("[]");
