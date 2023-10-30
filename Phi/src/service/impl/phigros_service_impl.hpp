@@ -831,10 +831,11 @@ SELECT id,
   END AS matched_rating_field
 FROM phigros
 WHERE 
-  rating_ez BETWEEN {0} AND {1} OR 
+  (rating_ez BETWEEN {0} AND {1} OR 
   rating_hd BETWEEN {0} AND {1} OR 
   rating_in BETWEEN {0} AND {1} OR 
-  rating_at BETWEEN {0} AND {1};)", rating - 0.01f, rating + 0.01f) };
+  rating_at BETWEEN {0} AND {1}) AND  
+  sid IS NOT NULL;)", rating - 0.01f, rating + 0.01f) };
 
 			SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string matched_rating_field) {
 				std::string level = matched_rating_field.substr(7);
