@@ -700,7 +700,7 @@ from phigros where " };
 		return "ok";
 	}
 
-	std::string asyncMatch(void) override {
+	std::string syncMatch(void) override {
 		Json body;
 		SQL_Util::PhiDB << "select sid,id,title from phigros" >> [&]
 		(std::unique_ptr<std::string> sid_p, int32_t id, std::string title) {

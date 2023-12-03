@@ -482,7 +482,7 @@ public:
 		});
 
 		CROW_ROUTE(m_app, "/phi/delAlias")
-			.methods("DELETE"_method)([&](const crow::request& req) {
+			.methods("POST"_method)([&](const crow::request& req) {
 			crow::response resp;
 			resp.set_header("Content-Type", "application/json");
 			try {
@@ -644,7 +644,7 @@ public:
 				});
 
 		if (Global::Meilisearch::IsOpen) {
-			CROW_ROUTE(m_app, "/phi/asyncMatch")
+			CROW_ROUTE(m_app, "/phi/syncMatch")
 				.methods("POST"_method)([&](const crow::request& req) {
 				crow::response resp;
 				resp.set_header("Content-Type", "application/json");
@@ -656,7 +656,7 @@ public:
 					}
 
 					// 将 JSON 数据作为响应体返回
-					resp.write(this->m_phigros->asyncMatch());
+					resp.write(this->m_phigros->syncMatch());
 					return resp;
 				}
 				catch (const self::HTTPException& e) {

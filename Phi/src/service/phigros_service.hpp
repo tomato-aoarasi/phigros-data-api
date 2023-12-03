@@ -33,7 +33,7 @@ public:
 	virtual std::string addAlias(const UserData&, const defined::PhiAliasAddParam&) = 0;
 	virtual std::string delAlias(const UserData&, const defined::PhiAliasAddParam&) = 0;
 
-	virtual std::string asyncMatch(void) = 0;
+	virtual std::string syncMatch(void) = 0;
 private:
 };
 
