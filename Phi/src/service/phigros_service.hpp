@@ -28,6 +28,8 @@ public:
 
 	virtual Json getBatch(const UserData&, std::string_view, float, float) = 0;
 
+	virtual Json getFuzzyQuerySongInfo(const UserData&, std::string_view) = 0;
+
 	virtual Json getRating(const UserData&,float, float) = 0;
 	
 	virtual std::string addAlias(const UserData&, const defined::PhiAliasAddParam&) = 0;

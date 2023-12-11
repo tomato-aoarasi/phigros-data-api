@@ -432,6 +432,55 @@ public:
 
 			return resp;
 		});
+
+		CROW_ROUTE(m_app, "/phi/getFuzzyQuerySongInfo")
+			.methods("GET"_method)([&](const crow::request& req) {
+			crow::response resp;
+			resp.set_header("Content-Type", "application/json");
+			try {
+				// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
+				auto authentication{ getUser(req.get_header_value("Authorization")) };
+				if (authentication.authority == 0) {
+					throw self::HTTPException("", 401, 6);
+				}
+				
+				std::string title{ "" };
+
+				if (OtherUtil::verifyParam(req, "title")) {
+					title = req.url_params.get("title");
+				}
+				else {
+					throw self::HTTPException("parameter 'title' required and parameter cannot be empty.", 400, 7);
+				}
+
+				// 将 JSON 数据作为响应体返回
+				resp.write(this->m_phigros->getFuzzyQuerySongInfo(authentication, title).dump(amount_spaces));
+
+				return resp;
+			} catch (const self::HTTPException& e) {
+				if (e.getMessage().empty()) {
+					resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), "", e.getStatus()).dump(amount_spaces));
+				} else {
+					resp.write(StatusCodeHandle::getSimpleJsonResult(e.getCode(), e.getMessage(), e.getStatus()).dump(amount_spaces));
+				}
+				LogSystem::logError(std::format("[Phigros]FuzzyQuerySongInfo ------ msg: {} / code: {} / status: {}", e.what(), e.getCode(), e.getStatus()));
+				resp.code = e.getCode();
+			} catch (const self::TimeoutException& e) {
+				LogSystem::logError("[PhigrosAPI]FuzzyQuerySongInfo ------ API请求超时");
+				resp.write(StatusCodeHandle::getSimpleJsonResult(408, "Data API request timeout", 2).dump(amount_spaces));
+				resp.code = 408;
+			} catch (const std::runtime_error& e) {
+				LogSystem::logError(std::format("[PhigrosAPI]FuzzyQuerySongInfo ------ msg: {} / code: {}", e.what(), 500));
+				resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
+				resp.code = 500;
+			} catch (const std::exception& e) {
+				LogSystem::logError(std::format("[PhigrosAPI]FuzzyQuerySongInfo ------ msg: {} / code: {}", e.what(), 500));
+				resp.write(StatusCodeHandle::getSimpleJsonResult(500, e.what(), 1).dump(amount_spaces));
+				resp.code = 500;
+			}
+
+			return resp;
+		});
 		
 		CROW_ROUTE(m_app, "/phi/addAlias")
 			.methods("POST"_method)([&](const crow::request& req) {

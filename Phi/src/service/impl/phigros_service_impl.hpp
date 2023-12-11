@@ -663,6 +663,75 @@ from phigros where " };
 		return result;
 	}
 
+	Json getFuzzyQuerySongInfo(const UserData& authentication, std::string_view match_title) override {
+		std::string front_sql{ std::format(" \
+select sid,id, title, song_illustration_path, song_audio_path, \
+rating_ez, rating_hd, rating_in, rating_at, rating_lg, rating_sp, \
+note_ez, note_hd, note_in, note_at, note_lg, note_sp,\
+design_ez, design_hd, design_in, design_at, design_lg, design_sp, \
+artist, illustration, duration, bpm, chapter \
+from phigros where title like \"%{}%\"", match_title.data()) };
+		Json result;
+		SQL_Util::PhiDB << front_sql
+			>> [&](
+				std::unique_ptr<std::string> sid_p, int32_t id, std::string title,
+				std::string song_illustration_path, std::string song_audio_path,
+				std::unique_ptr<float> rating_ez, std::unique_ptr<float> rating_hd, std::unique_ptr<float> rating_in, std::unique_ptr<float> rating_at, std::unique_ptr<float> rating_lg, std::unique_ptr<float> rating_sp,
+				std::unique_ptr<uint16_t> note_ez, std::unique_ptr<uint16_t> note_hd, std::unique_ptr<uint16_t> note_in, std::unique_ptr<uint16_t> note_at, std::unique_ptr<uint16_t> note_lg, std::unique_ptr<uint16_t> note_sp,
+				std::unique_ptr<std::string> design_ez, std::unique_ptr<std::string> design_hd, std::unique_ptr<std::string> design_in, std::unique_ptr<std::string> design_at, std::unique_ptr<std::string> design_lg, std::unique_ptr<std::string> design_sp,
+				std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
+				) {
+					Json info;
+					if (sid_p)info["sid"] = *sid_p;
+					else info["sid"] = nullptr;
+					info["id"] = id;
+					info["title"] = title;
+
+					if (authentication.authority == 5)
+					{
+						info["illustrationPath"] = song_illustration_path;
+						info["audioPath"] = song_audio_path;
+					};
+
+					std::array<std::string, 6> levels = { "ez", "hd", "in", "at", "lg", "sp" };
+
+					for (const auto& level : levels) {
+						info["content"][level]["rating"] = nullptr;
+						info["content"][level]["note"] = nullptr;
+						info["content"][level]["design"] = nullptr;
+						info["flag"][level] = false;
+
+						struct {
+							std::unique_ptr<float> rating;
+							std::unique_ptr<uint16_t> note;
+							std::unique_ptr<std::string> design;
+						} rating = { nullptr, nullptr, nullptr };
+
+						if (level == "ez")		rating = { std::move(rating_ez), std::move(note_ez), std::move(design_ez) };
+						else if (level == "hd") rating = { std::move(rating_hd), std::move(note_hd), std::move(design_hd) };
+						else if (level == "in") rating = { std::move(rating_in), std::move(note_in), std::move(design_in) };
+						else if (level == "at") rating = { std::move(rating_at), std::move(note_at), std::move(design_at) };
+						else if (level == "lg") rating = { std::move(rating_lg), std::move(note_lg), std::move(design_lg) };
+						else if (level == "sp") rating = { std::move(rating_sp), std::move(note_sp), std::move(design_sp) };
+
+						if (rating.rating) info["content"][level]["rating"] = *rating.rating;
+						if (rating.note) info["content"][level]["note"] = *rating.note;
+						if (rating.design) info["content"][level]["design"] = *rating.design;
+						if (rating.rating and rating.note and rating.design) info["flag"][level] = true;
+					}
+
+					info["artist"] = artist;
+					info["illustration"] = illustration;
+					info["duration"] = duration;
+					info["bpm"] = bpm;
+					info["chapter"] = chapter;
+					result.push_back(info);
+		};
+
+		if (result.is_null()) result = Json::parse("[]");
+		return result;
+	}
+
 	std::string addAlias(const UserData& authentication, const defined::PhiAliasAddParam& add) override {
 		bool is_existe{ false };
 		if (authentication.authority < 3) throw self::HTTPException("", 401, 6);
