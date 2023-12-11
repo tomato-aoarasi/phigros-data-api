@@ -8,15 +8,16 @@
 
 #pragma once
 
+#ifndef PHIGROS_SERVICE_HPP_IMPL
+#define PHIGROS_SERVICE_HPP_IMPL  
 #include <service/phigros_service.hpp>
 #include <service/impl/phi_taptap_api.hpp>
 #include "configuration/config.hpp"
 #include <cpprest/http_client.h>
 #include <cpprest/json.h>
 #include <common/utils/prevent_inject.hpp>
+#include <Poco/URI.h>
 
-#ifndef PHIGROS_SERVICE_HPP_IMPL
-#define PHIGROS_SERVICE_HPP_IMPL  
 class PhigrosServiceImpl : public PhigrosService {
 private:
 	const std::array<std::string, 5> disk_capacity_unit{ "KiB", "MiB", "GiB", "TiB", "PiB" };
@@ -582,7 +583,7 @@ FROM "{0}";)",st) };
 		return result.dump();
 	}
 
-	Json getSongInfo(const UserData& authentication, const defined::PhiInfoParamStruct& infoParam) override {
+	Json getSongInfo(const UserData& authentication, defined::PhiInfoParamStruct& infoParam) override {
 		std::string front_sql{ " \
 select sid,id, title, song_illustration_path, song_audio_path, \
 rating_ez, rating_hd, rating_in, rating_at, rating_lg, rating_sp, \
@@ -590,18 +591,30 @@ note_ez, note_hd, note_in, note_at, note_lg, note_sp,\
 design_ez, design_hd, design_in, design_at, design_lg, design_sp, \
 artist, illustration, duration, bpm, chapter \
 from phigros where " };
+		{
+			std::string search = "\"", replace = " ";
+			std::size_t pos = 0;
+			
+			switch (infoParam.mode) {
+			case 0:
+				if (!self::CheckParameterStr(infoParam.song_id)) throw self::HTTPException("SQL injection may exist", 403, 8);
+				front_sql += "sid = \""s + infoParam.song_id + "\";"s;
+				break;
+			case 1:
+				front_sql += "id = "s + infoParam.song_id + ";"s;
+				break;
+			case 2:
+				while ((pos = infoParam.title.find(search, pos)) != std::string::npos) {
+					infoParam.title.replace(pos, search.length(), replace);
+					pos += replace.length();
+				}
 
-		switch (infoParam.mode) {
-		case 0:
-			if (!self::CheckParameterStr(infoParam.song_id)) throw self::HTTPException("SQL injection may exist", 403, 8);
-			front_sql += "sid = \""s + infoParam.song_id + "\";"s;
-			break;
-		case 1:
-			front_sql += "id = "s + infoParam.song_id + ";"s;
-			break;
-		default:
-			throw self::HTTPException("", 400, 10);
-			break;
+				front_sql += "title = \""s + infoParam.title + "\";"s;
+				break;
+			default:
+				throw self::HTTPException("", 400, 10);
+				break;
+			}
 		}
 		Json result;
 		SQL_Util::PhiDB << front_sql
@@ -663,14 +676,21 @@ from phigros where " };
 		return result;
 	}
 
-	Json getFuzzyQuerySongInfo(const UserData& authentication, std::string_view match_title) override {
+	Json getFuzzyQuerySongInfo(const UserData& authentication, std::string& match_title) override {
+		std::string search = "\"", replace = " ";
+		std::size_t pos = 0;
+		while ((pos = match_title.find(search, pos)) != std::string::npos) {
+			match_title.replace(pos, search.length(), replace);
+			pos += replace.length();
+		}
+
 		std::string front_sql{ std::format(" \
 select sid,id, title, song_illustration_path, song_audio_path, \
 rating_ez, rating_hd, rating_in, rating_at, rating_lg, rating_sp, \
 note_ez, note_hd, note_in, note_at, note_lg, note_sp,\
 design_ez, design_hd, design_in, design_at, design_lg, design_sp, \
 artist, illustration, duration, bpm, chapter \
-from phigros where title like \"%{}%\"", match_title.data()) };
+from phigros where title like \"%{}%\"", match_title) };
 		Json result;
 		SQL_Util::PhiDB << front_sql
 			>> [&](

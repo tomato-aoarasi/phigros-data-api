@@ -24,11 +24,11 @@ public:
 
 	virtual Json matchAlias(const defined::PhiMatchAlias&) = 0;
 
-	virtual Json getSongInfo(const UserData&, const defined::PhiInfoParamStruct&) = 0;
+	virtual Json getSongInfo(const UserData&, defined::PhiInfoParamStruct&) = 0;
 
 	virtual Json getBatch(const UserData&, std::string_view, float, float) = 0;
 
-	virtual Json getFuzzyQuerySongInfo(const UserData&, std::string_view) = 0;
+	virtual Json getFuzzyQuerySongInfo(const UserData&, std::string&) = 0;
 
 	virtual Json getRating(const UserData&,float, float) = 0;
 	

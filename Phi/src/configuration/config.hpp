@@ -45,6 +45,7 @@ namespace defined {
 	struct PhiInfoParamStruct {
 		uint8_t mode;
 		std::string song_id;
+		std::string title;
 	};
 
 	struct PhiAliasAddParam {

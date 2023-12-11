@@ -7,12 +7,12 @@
 */
 #pragma once
 
+#ifndef PHIGROS_CONTROLLER_HPP
+#define PHIGROS_CONTROLLER_HPP  
 #include <regex>
 #include <configuration/config.hpp>
 #include <service/phigros_service.hpp>
 
-#ifndef PHIGROS_CONTROLLER_HPP
-#define PHIGROS_CONTROLLER_HPP  
 constexpr int amount_spaces{ 2 };
 
 class PhigrosController {
@@ -373,7 +373,7 @@ public:
 				});
 
 		CROW_ROUTE(m_app, "/phi/song")
-			.methods("GET"_method)([&](const crow::request& req) {
+			.methods("GET"_method, "POST"_method)([&](const crow::request& req) {
 			crow::response resp;
 			resp.set_header("Content-Type", "application/json");
 			try {
@@ -383,26 +383,55 @@ public:
 					throw self::HTTPException("", 401, 6);
 				}
 				
-				// 0: sid, 1: id(default)
+				// 0: sid, 1: id(default), 2: songname
 				defined::PhiInfoParamStruct info_param{.mode=0};
 
-				std::string songid{ "" };
+				if (req.method == crow::HTTPMethod::Get) {
+					std::string songid{ "" }, title{ "" };
+					bool is_used{ false };
+					std::string parameter{ "songid" };
+					if (OtherUtil::verifyParam(req, parameter)) {
+						songid = req.url_params.get(parameter);
+						is_used = true;
+					}
 
-				if (OtherUtil::verifyParam(req, "songid")) {
-					songid = req.url_params.get("songid");
-				}
-				else {
-					throw self::HTTPException("parameter 'songid' required and parameter cannot be empty.", 400, 7);
-				}
+					if (is_used)
+					{
+						try {
+							std::stoi(songid);
+							info_param.mode = 1;
+						}
+						catch (...) {
+							info_param.mode = 0;
+						}
+						info_param.song_id = std::move(songid);
+					} else {
+						parameter = "title";
+						if (OtherUtil::verifyParam(req, parameter)) {
+							title = req.url_params.get(parameter);
+							is_used = true;
+							info_param.mode = 2;
+							info_param.title = std::move(title);
+						}
+					}
 
-				try {
-					std::stoi(songid);
-					info_param.mode = 1;
+					if(!is_used)throw self::HTTPException("parameter 'songid' or 'title' required and parameter cannot be empty.", 400, 7);
 				}
-				catch (...) {
-					info_param.mode = 0;
+				else if (req.method == crow::HTTPMethod::Post) {
+					Json data{ Json::parse(req.body) };
+					std::exchange(data, data[0]);
+
+					info_param.mode = 2;
+
+					if(data.count("title")){
+						info_param.title = data.at("title").get<std::string>();
+						if(info_param.title.empty())throw self::HTTPException("'title' is empty", 400, 7);
+					
+					}else
+						throw self::HTTPException("request body missing 'title'", 400, 7);
+				} else{
+					throw self::HTTPException("", 405, 13);
 				}
-				info_param.song_id = songid;
 
 				// 将 JSON 数据作为响应体返回
 				resp.write(this->m_phigros->getSongInfo(authentication, info_param).dump(amount_spaces));
@@ -434,7 +463,7 @@ public:
 		});
 
 		CROW_ROUTE(m_app, "/phi/getFuzzyQuerySongInfo")
-			.methods("GET"_method)([&](const crow::request& req) {
+			.methods("POST"_method)([&](const crow::request& req) {
 			crow::response resp;
 			resp.set_header("Content-Type", "application/json");
 			try {
@@ -443,14 +472,17 @@ public:
 				if (authentication.authority == 0) {
 					throw self::HTTPException("", 401, 6);
 				}
-				
-				std::string title{ "" };
 
-				if (OtherUtil::verifyParam(req, "title")) {
-					title = req.url_params.get("title");
-				}
-				else {
-					throw self::HTTPException("parameter 'title' required and parameter cannot be empty.", 400, 7);
+				std::string title{ "" };
+				try {
+					Json data{ Json::parse(req.body) };
+					std::exchange(data, data[0]);
+					if (data.count("title")) {
+						title = data.at("title").get<std::string>();
+					}
+					else throw self::HTTPException("request body missing 'title'", 400, 7);
+				} catch (const Json::parse_error&) {
+					// 不处理异常
 				}
 
 				// 将 JSON 数据作为响应体返回
