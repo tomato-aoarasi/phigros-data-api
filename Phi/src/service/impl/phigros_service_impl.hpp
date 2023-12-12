@@ -671,7 +671,7 @@ from phigros where " };
 					result["chapter"] = chapter;
 		};
 
-		if (result.is_null()) result = Json::parse("[]");
+		// if (result.is_null()) result = Json::parse("[]");
 
 		return result;
 	}
