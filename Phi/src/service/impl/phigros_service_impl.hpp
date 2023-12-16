@@ -609,7 +609,11 @@ from phigros where " };
 					pos += replace.length();
 				}
 
-				front_sql += "title = \""s + infoParam.title + "\";"s;
+				front_sql += "title = \""s + infoParam.title + "\""s; // COLLATE NOCASE
+				if (infoParam.is_nocase){
+					front_sql += "COLLATE NOCASE";
+				}
+				front_sql += ";";
 				break;
 			default:
 				throw self::HTTPException("", 400, 10);

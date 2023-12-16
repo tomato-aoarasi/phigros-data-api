@@ -384,7 +384,7 @@ public:
 				}
 				
 				// 0: sid, 1: id(default), 2: songname
-				defined::PhiInfoParamStruct info_param{.mode=0};
+				defined::PhiInfoParamStruct info_param{.mode=0,.is_nocase=false };
 
 				if (req.method == crow::HTTPMethod::Get) {
 					std::string songid{ "" }, title{ "" };
@@ -426,10 +426,11 @@ public:
 					if(data.count("title")){
 						info_param.title = data.at("title").get<std::string>();
 						if(info_param.title.empty())throw self::HTTPException("'title' is empty", 400, 7);
-					
-					}else
-						throw self::HTTPException("request body missing 'title'", 400, 7);
-				} else{
+					}else throw self::HTTPException("request body missing 'title'", 400, 7);
+					if (data.count("is_nocase")) {
+						info_param.is_nocase = data.at("is_nocase").get<bool>();
+					}
+				} else {
 					throw self::HTTPException("", 405, 13);
 				}
 

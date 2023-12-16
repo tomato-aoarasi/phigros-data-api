@@ -46,6 +46,7 @@ namespace defined {
 		uint8_t mode;
 		std::string song_id;
 		std::string title;
+		bool is_nocase;
 	};
 
 	struct PhiAliasAddParam {
