@@ -26,15 +26,14 @@
 using namespace std::chrono_literals;
 using uchar = unsigned char;
 
-class OtherUtil final {
-public:
+namespace OtherUtil{
     /// <summary>
     /// 保留浮点数后N位
     /// </summary>
     /// <param name="f">数字</param>
     /// <param name="n">保留多少位</param>
     /// <returns></returns>
-    inline static std::string retainDecimalPlaces(double f, int n = 2) {
+    inline std::string retainDecimalPlaces(double f, int n = 2) {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(n) << f;
         return ss.str();
@@ -46,7 +45,7 @@ public:
     /// <param name="keys">crow param的列表</param>
     /// <param name="val">是否含有特定字符串</param>
     /// <returns>true为存在,false为不存在</returns>
-    inline static bool hasParam(const std::vector<std::string>& keys, std::string_view val) {
+    inline bool hasParam(const std::vector<std::string>& keys, std::string_view val) {
         return std::find(keys.cbegin(), keys.cend(), val) != keys.cend();
     }
 
@@ -56,7 +55,7 @@ public:
     /// <param name="req">req丢进去就完事了</param>
     /// <param name="val">是否存在的字符串</param>
     /// <returns>true返回长度不为0的内容</returns>
-    inline static bool verifyParam(const crow::request& req, std::string_view val) {
+    inline bool verifyParam(const crow::request& req, std::string_view val) {
         bool has_value{ hasParam(req.url_params.keys(), val) };
         if (has_value)
         {
@@ -72,7 +71,7 @@ public:
     /// <param name="timeout">超时时间</param>
     /// <param name="domain">域名</param>
     /// <param name="uri">uri</param>
-    inline static void asyncGetAPI(Json& data ,const std::chrono::milliseconds& timeout,const std::string& domain, const std::string& uri) {
+    inline void asyncGetAPI(Json& data ,const std::chrono::milliseconds& timeout,const std::string& domain, const std::string& uri) {
         std::future<Json> future{ std::async(std::launch::async,[&]()->Json {
 
             httplib::Client client(domain);
@@ -95,14 +94,14 @@ public:
     /// <param name="num"></param>
     /// <param name="symbol"></param>
     /// <returns></returns>
-    inline static std::string digitSupplementHandle(auto num, char&& symbol ='0', int length = 7) {
+    inline std::string digitSupplementHandle(auto num, char&& symbol ='0', int length = 7) {
         std::stringstream ss;
         ss << std::setw(length) << std::setfill(symbol) << num;
         return ss.str();
     };
 
     // AES-CBC解码
-    inline static std::vector<unsigned char> decrypt_AES_CBC(const std::vector<unsigned char>& data,
+    inline std::vector<unsigned char> decrypt_AES_CBC(const std::vector<unsigned char>& data,
         const std::vector<unsigned char>& key,
         const std::vector<unsigned char>& iv)
     {
@@ -120,7 +119,7 @@ public:
     }
 
     // base64解码的工具
-    inline static std::vector<uchar> base64Decode(const std::string& base64Str) {
+    inline std::vector<uchar> base64Decode(const std::string& base64Str) {
         static const std::string base64Chars =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             "abcdefghijklmnopqrstuvwxyz"
@@ -166,7 +165,7 @@ public:
     /// <param name="value">参数</param>
     /// <returns>返回大端的数据</returns>
     template <typename T>
-    inline static T littleBigEndianConversion(T value) {
+    inline T littleBigEndianConversion(T value) {
         int8_t* bytes{ reinterpret_cast<int8_t*>(&value)};
 
         size_t length{ sizeof(T) - 1 };
@@ -177,7 +176,15 @@ public:
 
         return value;
     }
-private:
+
+    // 字符串替换工具
+    inline void replace_str_all(std::string& str, const std::string& from, const std::string& to) {
+        size_t pos = str.find(from);
+        while (pos != std::string::npos) {
+            str.replace(pos, from.length(), to);
+            pos = str.find(from, pos + to.length());
+        }
+    };
 };
 
 #endif // OTHER_UTIL

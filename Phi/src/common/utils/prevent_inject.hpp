@@ -43,12 +43,11 @@ namespace self {
     }
 
     // 检查参数(字符串模式)
-    bool CheckParameterStr(std::string_view Parameter)
-    {
-        const std::string key[12] { "*","="," ","%0a","%","/","|","&","^" ,"#","/*","*/" };
-        for (int i{ 0 }; i < 12; i++)
+    template <std::size_t SIZE = 12>
+    bool CheckParameterStr(std::string_view Parameter, const std::array<std::string, SIZE> key = std::array<std::string, SIZE>({ "*", "=", " ","%0a","%","/","|","&","^" ,"#","/*","*/" })) {
+        for (int i{ 0 }; i < key.size(); i++)
         {
-            if (Parameter.find(key[i]) != std::string::npos)
+            if (Parameter.find(key.at(i)) != std::string::npos)
             {
                 return false;
             }

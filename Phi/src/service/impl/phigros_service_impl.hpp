@@ -43,6 +43,11 @@ private:
 	inline void player_records(std::string_view sessionToken, self::PhiTaptapAPI::CloudSaveSummary& cloudSaveSummary) {
 		bool is_exists{ false }, is_timestamp_same {false};
 		std::string st{ sessionToken.data() };
+
+		if (not self::CheckParameterStr(st, std::array<std::string, 15>({ "*", "=", " ","%0a","%","/","|","&","^" ,"#","/*","*/", "\"", "'", "--" }))) {
+			throw self::HTTPException("SQL injection may exist", 403, 8);
+		}
+
 		SQL_Util::PlayerRdDB <<
 			"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name=?);"
 			<< st >> is_exists;
@@ -82,7 +87,7 @@ private:
 
 	inline void updateSearch(int32_t id) {
 		Json song_info;
-		SQL_Util::PhiDB << "select sid,id,title from phigros where id = ?" << id >> [&]
+		SQL_Util::PhiDB << "select sid,id,title from phigros where id = ?;" << id >> [&]
 		(std::unique_ptr<std::string> sid_p, int32_t id, std::string title) {
 			if (sid_p)song_info["sid"] = *sid_p;
 			else song_info["sid"] = nullptr;
@@ -114,6 +119,10 @@ private:
 			throw self::HTTPException(error, 500, 12);
 		}
 	};
+
+	inline void replace_str(std::string& str) {
+		OtherUtil::replace_str_all(str, "\"", "\"\"");
+	}
 public:
 	virtual ~PhigrosServiceImpl() = default;
 	Json getAll(const UserData& authentication, std::string_view sessionToken) override {
@@ -418,11 +427,14 @@ public:
 	Json getRecords(const UserData& authentication, std::string_view sessionToken) override {
 		Json data;
 
-		if (!self::CheckParameterStr(sessionToken)) {
+		if (!self::CheckParameterStr(sessionToken, std::array<std::string, 15>({ "*", "=", " ","%0a","%","/","|","&","^" ,"#","/*","*/", "\"", "'", "--" }))) {
 			throw self::HTTPException("SQL injection may exist", 403, 8);
 		}
 
 		std::string st{ sessionToken.data() };
+
+		this->replace_str(st);
+
 		bool is_exists{ false };
 		SQL_Util::PlayerRdDB <<
 			"SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name=?);"
@@ -499,7 +511,7 @@ FROM "{0}";)",st) };
 
 	Json getAlias(const UserData& authentication, int32_t id) override {
 		Json result;
-		SQL_Util::PhiDB << "select id, alias from alias where song_id = ?"
+		SQL_Util::PhiDB << "select id, alias from alias where song_id = ?;"
 			<< id
 			>> [&](int32_t id, std::string alias) {
 			Json data{
@@ -516,12 +528,20 @@ FROM "{0}";)",st) };
 		return result;
 	};
 	
-	Json documentSongidByAlias(const UserData& authentication, std::string alias) override {
+	Json documentSongidByAlias(const UserData& authentication, std::string alias, bool is_nocase) override {
 		Json result;
 		int32_t song_id;
-		SQL_Util::PhiDB << "select song_id from alias where alias = ?"
-			<< alias
-			>> song_id;
+
+		this->replace_str(alias);
+
+		std::string sql{ "select song_id from alias where alias = \"" + alias + "\" " };
+
+		if (is_nocase){
+			sql += "COLLATE NOCASE";
+		}
+		sql += ";";
+
+		SQL_Util::PhiDB << sql >> song_id;
 
 		result["songId"] = song_id;
 
@@ -592,26 +612,20 @@ design_ez, design_hd, design_in, design_at, design_lg, design_sp, \
 artist, illustration, duration, bpm, chapter \
 from phigros where " };
 		{
-			std::string search = "\"", replace = " ";
-			std::size_t pos = 0;
-			
 			switch (infoParam.mode) {
 			case 0:
-				if (!self::CheckParameterStr(infoParam.song_id)) throw self::HTTPException("SQL injection may exist", 403, 8);
-				front_sql += "sid = \""s + infoParam.song_id + "\";"s;
+				if (!self::CheckParameterStr(infoParam.song_id, std::array<std::string, 15>({ "*", "=", " ","%0a","%","/","|","&","^" ,"#","/*","*/", "\"", "'", "--"}))) throw self::HTTPException("SQL injection may exist", 403, 8);
+				front_sql += "sid = \"" + infoParam.song_id + "\";"s;
 				break;
 			case 1:
-				front_sql += "id = "s + infoParam.song_id + ";"s;
+				front_sql += "id = " + infoParam.song_id + ";"s;
 				break;
 			case 2:
-				while ((pos = infoParam.title.find(search, pos)) != std::string::npos) {
-					infoParam.title.replace(pos, search.length(), replace);
-					pos += replace.length();
-				}
+				replace_str(infoParam.title);
+				front_sql += "title = \"" + infoParam.title + "\""s; // COLLATE NOCASE
 
-				front_sql += "title = \""s + infoParam.title + "\""s; // COLLATE NOCASE
 				if (infoParam.is_nocase){
-					front_sql += "COLLATE NOCASE";
+					front_sql += " COLLATE NOCASE";
 				}
 				front_sql += ";";
 				break;
@@ -681,20 +695,15 @@ from phigros where " };
 	}
 
 	Json getFuzzyQuerySongInfo(const UserData& authentication, std::string& match_title) override {
-		std::string search = "\"", replace = " ";
-		std::size_t pos = 0;
-		while ((pos = match_title.find(search, pos)) != std::string::npos) {
-			match_title.replace(pos, search.length(), replace);
-			pos += replace.length();
-		}
+		this->replace_str(match_title);
 
-		std::string front_sql{ std::format(" \
-select sid,id, title, song_illustration_path, song_audio_path, \
+		std::string front_sql{ "select \
+sid,id, title, song_illustration_path, song_audio_path, \
 rating_ez, rating_hd, rating_in, rating_at, rating_lg, rating_sp, \
 note_ez, note_hd, note_in, note_at, note_lg, note_sp,\
 design_ez, design_hd, design_in, design_at, design_lg, design_sp, \
 artist, illustration, duration, bpm, chapter \
-from phigros where title like \"%{}%\"", match_title) };
+from phigros where title like \"%" + match_title + "%\"" };
 		Json result;
 		SQL_Util::PhiDB << front_sql
 			>> [&](
@@ -917,11 +926,11 @@ from phigros where title like \"%{}%\"", match_title) };
 			std::string match_diff{ std::format(R"(
 SELECT id,
   CASE
-    WHEN rating_ez BETWEEN {0} AND {1} THEN 'rating_ez'
-    WHEN rating_hd BETWEEN {0} AND {1} THEN 'rating_hd'
-    WHEN rating_in BETWEEN {0} AND {1} THEN 'rating_in'
-    WHEN rating_at BETWEEN {0} AND {1} THEN 'rating_at'
-  END AS matched_rating_field
+    WHEN rating_ez BETWEEN {0} AND {1} THEN 'ez'
+    WHEN rating_hd BETWEEN {0} AND {1} THEN 'hd'
+    WHEN rating_in BETWEEN {0} AND {1} THEN 'in'
+    WHEN rating_at BETWEEN {0} AND {1} THEN 'at'
+  END AS level
 FROM phigros
 WHERE 
   (rating_ez BETWEEN {0} AND {1} OR 
@@ -930,9 +939,7 @@ WHERE
   rating_at BETWEEN {0} AND {1}) AND  
   sid IS NOT NULL;)", rating - 0.01f, rating + 0.01f) };
 
-			SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string matched_rating_field) {
-				std::string level = matched_rating_field.substr(7);
-
+			SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string level) {
 				std::string sql_command{ std::format(R"(select sid,id, title, song_illustration_path, song_audio_path, 
 	rating_{0}, note_{0}, design_{0}, 
 	artist, illustration, duration, bpm, chapter 
@@ -1025,13 +1032,13 @@ WHERE
 			std::string match_diff{ std::format(R"(
 SELECT id,
   CASE
-    WHEN rating_ez BETWEEN {0} AND {1} THEN 'rating_ez'
-    WHEN rating_hd BETWEEN {0} AND {1} THEN 'rating_hd'
-    WHEN rating_in BETWEEN {0} AND {1} THEN 'rating_in'
-    WHEN rating_at BETWEEN {0} AND {1} THEN 'rating_at'
-    WHEN rating_lg BETWEEN {0} AND {1} THEN 'rating_lg'
-    WHEN rating_sp BETWEEN {0} AND {1} THEN 'rating_sp'
-  END AS matched_rating_field
+    WHEN rating_ez BETWEEN {0} AND {1} THEN 'ez'
+    WHEN rating_hd BETWEEN {0} AND {1} THEN 'hd'
+    WHEN rating_in BETWEEN {0} AND {1} THEN 'in'
+    WHEN rating_at BETWEEN {0} AND {1} THEN 'at'
+    WHEN rating_lg BETWEEN {0} AND {1} THEN 'lg'
+    WHEN rating_sp BETWEEN {0} AND {1} THEN 'sp'
+  END AS level
 FROM phigros
 WHERE 
   rating_ez BETWEEN {0} AND {1} OR 
@@ -1042,9 +1049,7 @@ WHERE
   rating_sp BETWEEN {0} AND {1};
 )", rating - 0.01f, rating + 0.01f) };
 
-				SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string matched_rating_field) {
-				std::string level = matched_rating_field.substr(7);
-
+				SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string level) {
 				std::string sql_command{ std::format(R"(select sid,id, title, song_illustration_path, song_audio_path, 
 	rating_{0}, note_{0}, design_{0}, 
 	artist, illustration, duration, bpm, chapter 

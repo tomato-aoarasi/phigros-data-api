@@ -20,7 +20,7 @@ public:
 	virtual Json getRecords(const UserData&, std::string_view) = 0;
 
 	virtual Json getAlias(const UserData&, int32_t) = 0;
-	virtual Json documentSongidByAlias(const UserData&, std::string) = 0;
+	virtual Json documentSongidByAlias(const UserData&, std::string, bool) = 0;
 
 	virtual Json matchAlias(const defined::PhiMatchAlias&) = 0;
 

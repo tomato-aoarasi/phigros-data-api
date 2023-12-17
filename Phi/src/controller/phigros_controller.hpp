@@ -269,25 +269,33 @@ public:
 				});
 		
 		CROW_ROUTE(m_app, "/phi/documentSongidByAlias")
-			.methods("GET"_method)([&](const crow::request& req) {
+			.methods("POST"_method)([&](const crow::request& req) {
 			crow::response resp;
 			resp.set_header("Content-Type", "application/json");
 			try {
 				std::string alias{};
+				bool is_nocase{ false };
 				// Bearer gOzXb0WUtjK6bkv17dybAoyrxIS15srm
 				auto authentication{ getUser(req.get_header_value("Authorization")) };
 				if (authentication.authority == 0) {
 					throw self::HTTPException("", 401, 6);
 				}
 
-				if (OtherUtil::verifyParam(req, "alias")) {
-					alias = req.url_params.get("alias");
+				Json body{ Json::parse(req.body) };
+				std::exchange(body, body[0]);
+
+				if (body.count("alias")) {
+					alias = body.at("alias").get<std::string>();
 				} else {
 					throw self::HTTPException("parameter 'alias' required and parameter cannot be empty.", 400, 7);
 				}
+				
+				if (body.count("nocase")) {
+					is_nocase = body.at("nocase").get<bool>();
+				}
 
 				// 将 JSON 数据作为响应体返回
-				resp.write(this->m_phigros->documentSongidByAlias(authentication, alias).dump(amount_spaces));
+				resp.write(this->m_phigros->documentSongidByAlias(authentication, alias, is_nocase).dump(amount_spaces));
 
 				return resp;
 			} catch (const self::HTTPException& e) {
