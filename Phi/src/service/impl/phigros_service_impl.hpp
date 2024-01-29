@@ -58,7 +58,7 @@ private:
 			SQL_Util::PlayerRdDB << 
 				"CREATE TABLE if not exists \"" + st + "\" ( "
 				"sid integer PRIMARY KEY AUTOINCREMENT NOT NULL,"
-				"rks text, "
+				"rks real, "
 				"challengeModeRank integer, "
 				"timestamp date, "
 				"nickname text );";
