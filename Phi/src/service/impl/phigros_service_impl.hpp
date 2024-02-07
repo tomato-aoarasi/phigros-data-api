@@ -39,9 +39,9 @@ private:
 		bool is_fc;
 		unsigned int score;
 	};
-	
+
 	inline void player_records(std::string_view sessionToken, self::PhiTaptapAPI::CloudSaveSummary& cloudSaveSummary) {
-		bool is_exists{ false }, is_timestamp_same {false};
+		bool is_exists{ false }, is_timestamp_same{ false };
 		std::string st{ sessionToken.data() };
 
 		if (not self::CheckParameterStr(st, std::array<std::string, 15>({ "*", "=", " ","%0a","%","/","|","&","^" ,"#","/*","*/", "\"", "'", "--" }))) {
@@ -53,9 +53,9 @@ private:
 			<< st >> is_exists;
 
 		// 表不存在(第一次记录)
-		if (!is_exists){
+		if (!is_exists) {
 			//std::cout << "create" << std::endl;
-			SQL_Util::PlayerRdDB << 
+			SQL_Util::PlayerRdDB <<
 				"CREATE TABLE if not exists \"" + st + "\" ( "
 				"sid integer PRIMARY KEY AUTOINCREMENT NOT NULL,"
 				"rks real, "
@@ -65,16 +65,16 @@ private:
 			//std::cout << "create end" << std::endl;
 		}
 		// 表存在
-		else 
+		else
 		{
 			//std::cout << "timestamp" << std::endl;
-			std::time_t timestamp_temp {};
+			std::time_t timestamp_temp{};
 			SQL_Util::PlayerRdDB << "SELECT timestamp FROM \"" + st + "\" WHERE sid = (SELECT MAX(sid) FROM \"" + st + "\"); " >> timestamp_temp;
 			is_timestamp_same = timestamp_temp == cloudSaveSummary.timestamp;
 			//std::cout << "timestamp end" << std::endl;
 		}
 
-		if (!is_timestamp_same){
+		if (!is_timestamp_same) {
 			//std::cout << "insert" << std::endl;
 			SQL_Util::PlayerRdDB << "insert into \"" + st + "\" (rks,challengeModeRank,timestamp,nickname) values (?,?,?,?);"
 				<< cloudSaveSummary.RankingScore
@@ -101,8 +101,8 @@ private:
 					{"aliasId", id},
 					{"alias", alias},
 					});
+				};
 			};
-		};
 
 		web::http::client::http_client client(U(Global::Meilisearch::Url));
 		// 创建第一个HTTP请求, 添加匹配索引
@@ -142,7 +142,7 @@ public:
 		std::multimap<float, personalPhiSongInfo, KeyComparator> singlePhi;
 
 		//std::cout << "\n=====================\n";
-		auto playerSummary{ phiAPI.GetSummary()};
+		auto playerSummary{ phiAPI.GetSummary() };
 
 		// 玩家记录
 		player_records(sessionToken, playerSummary);
@@ -174,13 +174,14 @@ public:
 					data["content"]["other"]["avatarDbId"] = Global::PhigrosPlayerAvatar.at(avatar_id).sid;
 				}
 				data["content"]["other"]["avatarHasEnable"] = true;
-			}else data["content"]["other"]["avatarHasEnable"] = false;
+			}
+			else data["content"]["other"]["avatarHasEnable"] = false;
 
 			data["content"]["other"]["avatar"] = avatar_id;
 			data["content"]["other"]["background"] = playerData.background;
 			data["content"]["other"]["profile"] = playerData.profile;
 
-			for (size_t index{0}; index < disk_capacity_unit.size(); ++index){
+			for (size_t index{ 0 }; index < disk_capacity_unit.size(); ++index) {
 				data["content"]["other"]["data"][disk_capacity_unit.at(index)] = phiAPI.getGameProgress().data.at(index);
 			}
 		}
@@ -321,7 +322,7 @@ public:
 			for (uint8_t i{ difficulty }; i > 0; --i)
 			{
 				--difficulty;
-				if (records.at(song_id).count(difficulty)){
+				if (records.at(song_id).count(difficulty)) {
 					break;
 				}
 			}
@@ -331,13 +332,13 @@ public:
 		float
 			acc{ record.acc },
 			rks{ 0.0f },
-			rate{ Global::PhigrosSongInfo[song_id].rating[difficulty]};
+			rate{ Global::PhigrosSongInfo[song_id].rating[difficulty] };
 		if (acc >= 70) rks = (std::pow((acc - 55) / 45, 2)) * rate;
 
 		std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
 		auto& level{ levels[difficulty] };
 		data["content"]["record"]["songid"] = song_id;
-		data["content"]["record"]["difficulty"] = level /* record.difficulty */ ;
+		data["content"]["record"]["difficulty"] = level /* record.difficulty */;
 		data["content"]["record"]["acc"] = acc;
 		data["content"]["record"]["score"] = record.score;
 		data["content"]["record"]["isfc"] = record.is_fc;
@@ -397,7 +398,7 @@ public:
 			}
 		}
 
-		if(info){
+		if (info) {
 			std::transform(level.begin(), level.end(), level.begin(), ::tolower);
 			std::string sql{ std::format("SELECT id,title,rating_{0},note_{0},design_{0},artist,illustration,duration,bpm,chapter FROM phigros WHERE ",level) };
 			sql += "sid = ?;";
@@ -407,17 +408,17 @@ public:
 				float rating, uint16_t note, std::string design,
 				std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
 				) {
-				data["content"]["info"]["id"] = id;
-				data["content"]["info"]["title"] = title;
-				data["content"]["info"]["rating"] = rating;
-				data["content"]["info"]["note"] = note;
-				data["content"]["info"]["design"] = design;
-				data["content"]["info"]["artist"] = artist;
-				data["content"]["info"]["illustration"] = illustration;
-				data["content"]["info"]["duration"] = duration;
-				data["content"]["info"]["bpm"] = bpm;
-				data["content"]["info"]["chapter"] = chapter;
-			};
+					data["content"]["info"]["id"] = id;
+					data["content"]["info"]["title"] = title;
+					data["content"]["info"]["rating"] = rating;
+					data["content"]["info"]["note"] = note;
+					data["content"]["info"]["design"] = design;
+					data["content"]["info"]["artist"] = artist;
+					data["content"]["info"]["illustration"] = illustration;
+					data["content"]["info"]["duration"] = duration;
+					data["content"]["info"]["bpm"] = bpm;
+					data["content"]["info"]["chapter"] = chapter;
+				};
 		}
 
 		data["status"] = 0;
@@ -444,7 +445,7 @@ public:
 			throw self::HTTPException("Record doesn't exist", 404, 9);
 		}
 
-		SQL_Util::PlayerRdDB << "select sid,rks,challengeModeRank,timestamp,nickname from \"" + st +  "\";"
+		SQL_Util::PlayerRdDB << "select sid,rks,challengeModeRank,timestamp,nickname from \"" + st + "\";"
 			>> [&](uint32_t sid, double rks, uint16_t challengeModeRank, std::time_t timestamp, std::string nickname) {
 
 			data["content"]["data"].emplace_back(
@@ -455,9 +456,9 @@ public:
 				  {"timestamp", timestamp},
 				  {"nickname", nickname},
 				});
-		};
+			};
 
-		std::string statisticalChallengeModeRankDataSQL { std::format(R"(
+		std::string statisticalChallengeModeRankDataSQL{ std::format(R"(
 SELECT 
   COUNT(CASE WHEN challengeModeRank >= 0 AND challengeModeRank < 100 THEN 1 END) AS white,
   COUNT(CASE WHEN challengeModeRank >= 100 AND challengeModeRank < 200 THEN 1 END) AS green,
@@ -478,32 +479,32 @@ SELECT
 FROM "{0}";)",st) };
 
 		SQL_Util::PlayerRdDB << statisticalChallengeModeRankDataSQL >> [&](int white, int green, int blue, int red, int gold, int rainbow,
-			uint16_t max, uint16_t min, uint16_t indistinguishable_max, uint16_t indistinguishable_min, 
+			uint16_t max, uint16_t min, uint16_t indistinguishable_max, uint16_t indistinguishable_min,
 			time_t max_timestamp, time_t min_timestamp,
 			double max_rks, double min_rks,
 			time_t rks_max_timestamp, time_t rks_min_timestamp
 			) {
-			{
-				data["content"]["statisticalChallengeModeRank"]["whiteCount"] = white;
-				data["content"]["statisticalChallengeModeRank"]["greenCount"] = green;
-				data["content"]["statisticalChallengeModeRank"]["blueCount"] = blue;
-				data["content"]["statisticalChallengeModeRank"]["redCount"] = red;
-				data["content"]["statisticalChallengeModeRank"]["goldCount"] = gold;
-				data["content"]["statisticalChallengeModeRank"]["rainbowCount"] = rainbow;
-				data["content"]["statisticalChallengeModeRank"]["max"] = max;
-				data["content"]["statisticalChallengeModeRank"]["min"] = min;
-				data["content"]["statisticalChallengeModeRank"]["indistinguishableMax"] = indistinguishable_max;
-				data["content"]["statisticalChallengeModeRank"]["indistinguishableMin"] = indistinguishable_min;
-				data["content"]["statisticalChallengeModeRank"]["timestampMax"] = max_timestamp;
-				data["content"]["statisticalChallengeModeRank"]["timestampMin"] = min_timestamp;
-			}
-			{
-				data["content"]["statisticalRKS"]["maxRKS"] = max_rks;
-				data["content"]["statisticalRKS"]["minRKS"] = min_rks;
-				data["content"]["statisticalRKS"]["rksTimestampMax"] = rks_max_timestamp;
-				data["content"]["statisticalRKS"]["rksTimestampMin"] = rks_min_timestamp;
-			}
-		};
+				{
+					data["content"]["statisticalChallengeModeRank"]["whiteCount"] = white;
+					data["content"]["statisticalChallengeModeRank"]["greenCount"] = green;
+					data["content"]["statisticalChallengeModeRank"]["blueCount"] = blue;
+					data["content"]["statisticalChallengeModeRank"]["redCount"] = red;
+					data["content"]["statisticalChallengeModeRank"]["goldCount"] = gold;
+					data["content"]["statisticalChallengeModeRank"]["rainbowCount"] = rainbow;
+					data["content"]["statisticalChallengeModeRank"]["max"] = max;
+					data["content"]["statisticalChallengeModeRank"]["min"] = min;
+					data["content"]["statisticalChallengeModeRank"]["indistinguishableMax"] = indistinguishable_max;
+					data["content"]["statisticalChallengeModeRank"]["indistinguishableMin"] = indistinguishable_min;
+					data["content"]["statisticalChallengeModeRank"]["timestampMax"] = max_timestamp;
+					data["content"]["statisticalChallengeModeRank"]["timestampMin"] = min_timestamp;
+				}
+				{
+					data["content"]["statisticalRKS"]["maxRKS"] = max_rks;
+					data["content"]["statisticalRKS"]["minRKS"] = min_rks;
+					data["content"]["statisticalRKS"]["rksTimestampMax"] = rks_max_timestamp;
+					data["content"]["statisticalRKS"]["rksTimestampMin"] = rks_min_timestamp;
+				}
+			};
 
 		data["status"] = 0;
 		return data;
@@ -519,31 +520,62 @@ FROM "{0}";)",st) };
 				{"alias", alias},
 			};
 			result["content"].emplace_back(data);
-		};
+			};
 
 		if (result.is_null()) throw self::HTTPException("", 404, 11);
-		
+
 		result["songId"] = id;
 
 		return result;
 	};
-	
+
 	Json documentSongidByAlias(const UserData& authentication, std::string alias, bool is_nocase) override {
 		Json result;
-		int32_t song_id;
 
 		this->replace_str(alias);
 
-		std::string sql{ "select song_id from alias where alias = \"" + alias + "\" " };
+		std::string sql{ "select a.id,a.alias,a.song_id,p.sid,p.title from alias as a,phigros as p where a.alias = \"" + alias + "\" " };
 
-		if (is_nocase){
-			sql += "COLLATE NOCASE";
+		if (is_nocase) {
+			sql += "COLLATE NOCASE ";
 		}
-		sql += ";";
+		sql += "and a.song_id = p.id;";
 
-		SQL_Util::PhiDB << sql >> song_id;
+		SQL_Util::PhiDB << sql >> [&](std::int32_t id, std::string alias, std::int32_t songId, std::unique_ptr<std::string> songSid, std::string title) {
+				result["aliasId"] = id;
+				result["alias"] = alias;
+				result["songId"] = songId;
+				result["title"] = title;
 
-		result["songId"] = song_id;
+				if (songSid)result["songSid"] = *songSid;
+				else result["songSid"] = nullptr;
+			};
+
+		if (result.is_null()) throw self::HTTPException("", 404, 11);
+
+		return result;
+	};
+
+	Json fuzzyQueryByAliasGetSongID(const UserData& authentication, std::string matchAlias) override {
+		Json result;
+
+		this->replace_str(matchAlias);
+
+		std::string sql{ "select a.id,a.alias,a.song_id,p.sid,p.title from alias as a,phigros as p where a.alias like \"%" + matchAlias + "%\" and a.song_id = p.id;" };
+
+		SQL_Util::PhiDB << sql >> [&](std::int32_t id, std::string alias, std::int32_t songId, std::unique_ptr<std::string> songSid, std::string title) {
+			Json info{
+				{ "aliasId", id },
+				{ "alias", alias },
+				{ "songId", songId },
+				{ "title", title }
+			};
+
+			if (songSid)info["songSid"] = *songSid;
+			else info["songSid"] = nullptr;
+
+			result.push_back(info);
+			};
 
 		if (result.is_null()) throw self::HTTPException("", 404, 11);
 
@@ -573,7 +605,8 @@ FROM "{0}";)",st) };
 
 		if (response.status_code() < 400 and response.status_code() >= 200) {
 			resp = Json::parse(response.extract_json().get().serialize());
-		} else {
+		}
+		else {
 			auto error = response.extract_string().get();
 			throw self::HTTPException(error, 500, 12);
 		}
@@ -588,12 +621,13 @@ FROM "{0}";)",st) };
 
 			if (index["sid"].is_null()) data["sid"] = nullptr;
 			else data["sid"] = index.at("sid").get<std::string>();
-			
+
 			data["title"] = index.at("title").get<std::string>();
 
-			if (index.count("aliases")){
+			if (index.count("aliases")) {
 				data["aliases"] = index.at("aliases");
-			} else {
+			}
+			else {
 				data["aliases"] = json::array();
 			}
 
@@ -614,7 +648,7 @@ from phigros where " };
 		{
 			switch (infoParam.mode) {
 			case 0:
-				if (!self::CheckParameterStr(infoParam.song_id, std::array<std::string, 15>({ "*", "=", " ","%0a","%","/","|","&","^" ,"#","/*","*/", "\"", "'", "--"}))) throw self::HTTPException("SQL injection may exist", 403, 8);
+				if (!self::CheckParameterStr(infoParam.song_id, std::array<std::string, 15>({ "*", "=", " ","%0a","%","/","|","&","^" ,"#","/*","*/", "\"", "'", "--" }))) throw self::HTTPException("SQL injection may exist", 403, 8);
 				front_sql += "sid = \"" + infoParam.song_id + "\";"s;
 				break;
 			case 1:
@@ -624,7 +658,7 @@ from phigros where " };
 				replace_str(infoParam.title);
 				front_sql += "title = \"" + infoParam.title + "\""s; // COLLATE NOCASE
 
-				if (infoParam.is_nocase){
+				if (infoParam.is_nocase) {
 					front_sql += " COLLATE NOCASE";
 				}
 				front_sql += ";";
@@ -687,7 +721,7 @@ from phigros where " };
 					result["duration"] = duration;
 					result["bpm"] = bpm;
 					result["chapter"] = chapter;
-		};
+			};
 
 		// if (result.is_null()) result = Json::parse("[]");
 
@@ -759,7 +793,7 @@ from phigros where title like \"%" + match_title + "%\"" };
 					info["bpm"] = bpm;
 					info["chapter"] = chapter;
 					result.push_back(info);
-		};
+			};
 
 		if (result.is_null()) result = Json::parse("[]");
 		return result;
@@ -770,7 +804,7 @@ from phigros where title like \"%" + match_title + "%\"" };
 		if (authentication.authority < 3) throw self::HTTPException("", 401, 6);
 		SQL_Util::PhiDB << "select count(id) from phigros where id = ?;" << add.related_song_id >> is_existe;
 
-		if(!is_existe) throw self::HTTPException("song id doesn't exist", 404, 3);
+		if (!is_existe) throw self::HTTPException("song id doesn't exist", 404, 3);
 		SQL_Util::PhiDB << "insert into alias (alias,song_id) values (?,?);"
 			<< add.alias
 			<< add.related_song_id;
@@ -790,9 +824,9 @@ from phigros where title like \"%" + match_title + "%\"" };
 		(bool count_id, int32_t song_id) {
 			is_existe = count_id;
 			songId = song_id;
-		};
+			};
 
-		if(!is_existe) throw self::HTTPException("ID doesn't exist", 404, 3);
+		if (!is_existe) throw self::HTTPException("ID doesn't exist", 404, 3);
 		SQL_Util::PhiDB << "delete from alias where id = ?;" << add.sid;
 
 		if (Global::Meilisearch::IsOpen) {
@@ -820,9 +854,9 @@ from phigros where title like \"%" + match_title + "%\"" };
 					{"aliasId", id},
 					{"alias", alias},
 					});
-			};
+				};
 			body.emplace_back(song_info);
-		};
+			};
 
 		web::http::client::http_client client(U(Global::Meilisearch::Url));
 		// 创建第一个HTTP请求, 添加匹配索引
@@ -852,9 +886,9 @@ from phigros where title like \"%" + match_title + "%\"" };
 					throw self::HTTPException(error, 500, 12);
 				}
 			}
-		}).wait();
+			}).wait();
 
-		return "ok";
+			return "ok";
 	}
 
 	Json getBatch(const UserData& authentication, std::string_view sessionToken, float rating1, float rating2) override {
@@ -952,65 +986,66 @@ WHERE
 						float rating, uint16_t note, std::string design,
 						std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
 						) {
-						Json data;
+							Json data;
 
-						float rks{ 0.0f };
+							float rks{ 0.0f };
 
-						if (sid_p) {
-							std::string sid{ *sid_p };
-							data["info"]["level"] = level;
-							bool played_level{ false };
+							if (sid_p) {
+								std::string sid{ *sid_p };
+								data["info"]["level"] = level;
+								bool played_level{ false };
 
-							std::unordered_map<std::string, int> levels = {
-								{"ez", 0},
-								{"hd", 1},
-								{"in", 2},
-								{"at", 3}
-							};
+								std::unordered_map<std::string, int> levels = {
+									{"ez", 0},
+									{"hd", 1},
+									{"in", 2},
+									{"at", 3}
+								};
 
-							try {
-								auto record{ phi.at(sid).at(levels.at(level)) };
-								played_level = true;
+								try {
+									auto record{ phi.at(sid).at(levels.at(level)) };
+									played_level = true;
 
-								unsigned int score{ record.score };
-								float
-									acc{ record.acc };
-								bool is_fc{ record.is_fc };
-								if (acc >= 70) rks = (std::pow((acc - 55) / 45, 2)) * rating;
-								data["record"]["acc"] = acc;
-								data["record"]["score"] = score;
-								data["record"]["isfc"] = is_fc;
-								data["record"]["rks"] = rks;
-							} catch (...) { };
+									unsigned int score{ record.score };
+									float
+										acc{ record.acc };
+									bool is_fc{ record.is_fc };
+									if (acc >= 70) rks = (std::pow((acc - 55) / 45, 2)) * rating;
+									data["record"]["acc"] = acc;
+									data["record"]["score"] = score;
+									data["record"]["isfc"] = is_fc;
+									data["record"]["rks"] = rks;
+								}
+								catch (...) {};
 
-							data["playedLevel"] = played_level;
-							data["info"]["sid"] = sid;
-							data["info"]["id"] = id;
-							data["info"]["title"] = title;
+								data["playedLevel"] = played_level;
+								data["info"]["sid"] = sid;
+								data["info"]["id"] = id;
+								data["info"]["title"] = title;
 
-							if (authentication.authority == 5)
-							{
-								data["info"]["illustrationPath"] = song_illustration_path;
-								data["info"]["audioPath"] = song_audio_path;
-							};
+								if (authentication.authority == 5)
+								{
+									data["info"]["illustrationPath"] = song_illustration_path;
+									data["info"]["audioPath"] = song_audio_path;
+								};
 
-							data["info"]["rating"] = rating;
-							data["info"]["note"] = note;
-							data["info"]["design"] = design;
-							data["info"]["artist"] = artist;
-							data["info"]["illustration"] = illustration;
-							data["info"]["duration"] = duration;
-							data["info"]["bpm"] = bpm;
-							data["info"]["chapter"] = chapter;
-						}
+								data["info"]["rating"] = rating;
+								data["info"]["note"] = note;
+								data["info"]["design"] = design;
+								data["info"]["artist"] = artist;
+								data["info"]["illustration"] = illustration;
+								data["info"]["duration"] = duration;
+								data["info"]["bpm"] = bpm;
+								data["info"]["chapter"] = chapter;
+							}
 
-						rksSort.insert(std::make_pair(rks, data));
+							rksSort.insert(std::make_pair(rks, data));
+					};
 				};
-			};
 			final_map[rating_syn] = rksSort;
 		}
 
-		for (const auto& [rating, soft_map] : final_map) for(const auto& [_, data] : soft_map) result["batch"][rating].emplace_back(data);
+		for (const auto& [rating, soft_map] : final_map) for (const auto& [_, data] : soft_map) result["batch"][rating].emplace_back(data);
 		//result["batch"][rating_syn].emplace_back(data);
 
 		if (result.is_null()) result = Json::parse("[]");
@@ -1021,10 +1056,10 @@ WHERE
 	Json getRating(const UserData& authentication, float rating1, float rating2 = -1) override {
 		Json result;
 
-		if (rating1 < 0){
+		if (rating1 < 0) {
 			throw self::HTTPException("", 400, 11);
 		}
-		if (rating2 < 0){
+		if (rating2 < 0) {
 			rating2 = rating1;
 		}
 
@@ -1049,7 +1084,7 @@ WHERE
   rating_sp BETWEEN {0} AND {1};
 )", rating - 0.01f, rating + 0.01f) };
 
-				SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string level) {
+			SQL_Util::PhiDB << match_diff >> [&](int32_t id, std::string level) {
 				std::string sql_command{ std::format(R"(select sid,id, title, song_illustration_path, song_audio_path, 
 	rating_{0}, note_{0}, design_{0}, 
 	artist, illustration, duration, bpm, chapter 
@@ -1057,39 +1092,39 @@ WHERE
 				std::string rating_syn{ OtherUtil::retainDecimalPlaces(rating, 1) };
 
 				SQL_Util::PhiDB << sql_command << id
-				>> [&](
-					std::unique_ptr<std::string> sid_p, int32_t id, std::string title,
-					std::string song_illustration_path, std::string song_audio_path,
-					float rating, uint16_t note, std::string design,
-					std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
-					) {
-						Json data;
-						
-						if (sid_p)data["sid"] = *sid_p;
-						else data["sid"] = nullptr;
-						data["id"] = id;
-						data["title"] = title;
+					>> [&](
+						std::unique_ptr<std::string> sid_p, int32_t id, std::string title,
+						std::string song_illustration_path, std::string song_audio_path,
+						float rating, uint16_t note, std::string design,
+						std::string artist, std::string illustration, std::string duration, std::string bpm, std::string chapter
+						) {
+							Json data;
 
-						if (authentication.authority == 5)
-						{
-							data["illustrationPath"] = song_illustration_path;
-							data["audioPath"] = song_audio_path;
-						};
+							if (sid_p)data["sid"] = *sid_p;
+							else data["sid"] = nullptr;
+							data["id"] = id;
+							data["title"] = title;
 
-						data["rating"] = rating;
-						data["note"] = note;
-						data["design"] = design;
+							if (authentication.authority == 5)
+							{
+								data["illustrationPath"] = song_illustration_path;
+								data["audioPath"] = song_audio_path;
+							};
 
-						data["level"] = level;
-						data["artist"] = artist;
-						data["illustration"] = illustration;
-						data["duration"] = duration;
-						data["bpm"] = bpm;
-						data["chapter"] = chapter;
+							data["rating"] = rating;
+							data["note"] = note;
+							data["design"] = design;
 
-						result[rating_syn].emplace_back(data);
+							data["level"] = level;
+							data["artist"] = artist;
+							data["illustration"] = illustration;
+							data["duration"] = duration;
+							data["bpm"] = bpm;
+							data["chapter"] = chapter;
+
+							result[rating_syn].emplace_back(data);
+					};
 				};
-			};
 		}
 		if (result.is_null()) result = Json::parse("[]");
 

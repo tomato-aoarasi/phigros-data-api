@@ -22,6 +22,8 @@ public:
 	virtual Json getAlias(const UserData&, int32_t) = 0;
 	virtual Json documentSongidByAlias(const UserData&, std::string, bool) = 0;
 
+	virtual Json fuzzyQueryByAliasGetSongID(const UserData&, std::string) = 0;
+
 	virtual Json matchAlias(const defined::PhiMatchAlias&) = 0;
 
 	virtual Json getSongInfo(const UserData&, defined::PhiInfoParamStruct&) = 0;
