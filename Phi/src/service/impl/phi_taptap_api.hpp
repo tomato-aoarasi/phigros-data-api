@@ -26,18 +26,25 @@
 #include <Poco/Zip/ZipException.h>
 #include <Poco/Zip/ZipArchive.h> 
 #include <Poco/Zip/ZipLocalFileHeader.h> 
-#include <Poco/StreamCopier.h> 
+#include <Poco/StreamCopier.h>
 
 #ifndef PHI_TAPTAP_API_HPP
 #define PHI_TAPTAP_API_HPP  
+#include <cpprest/http_client.h>
+#include <cpprest/json.h>
 
 using ubyte = unsigned char;
 
-#if 0
+#if 1
 void HexDebug(const auto& content) {
+	std::uint32_t hits{ 0 };
 	for (const auto& data : content)
 	{
-		std::cout << std::format("{:02X}", data);
+		if (hits != 0){
+			std::cout << ',';
+		}
+		std::cout << std::format("0x{:02X}", data);
+		hits++;
 	};
 	std::cout << std::endl;
 }
@@ -45,7 +52,6 @@ void HexDebug(const auto& content) {
 
 
 namespace self {
-
 	class BinaryReader {
 	private:
 		std::vector<uint8_t> data_;
@@ -168,6 +174,14 @@ namespace self {
 		std::string profile{}, avatar{}, background{};
 	};
 
+	struct SaveModel {
+		std::string objectId;
+		std::string gameObjectId;
+		std::string userObjectId;
+		std::string summary;
+		std::string checksum;
+	};
+
 	class PhiTaptapAPI {
 	public:
 
@@ -273,6 +287,7 @@ namespace self {
 			}
 		};
 
+
 	private:
 		httplib::Headers m_headers{
 			{"X-LC-Id", "rAK3FfdieFob2Nn8Am"},
@@ -286,8 +301,13 @@ namespace self {
 		// 曲目id/难度(0/1/2/3/4)/信息
 		std::unordered_map<std::string, std::unordered_map<ubyte, SongScore>> m_player_record{};
 
+		SaveModel m_saveModel{};
+
 		std::string
-			m_nickname{};
+			m_nickname{},
+			m_sessionToken{};
+
+		std::unordered_map<std::string, std::vector<uint8_t>> m_decodedSaveData{};
 
 		UserData m_user_data{};
 
@@ -295,8 +315,12 @@ namespace self {
 
 		inline static const std::string
 			URL{ Config::getConfig()["server"]["data-url"].as<std::string>() },
-			GAME_SAVE_URI{ "/1.1/classes/_GameSave" },
+			UPLOAD_URL{ Config::getConfig()["server"]["upload-data-url"].as<std::string>() };
+
+		const std::string GAME_SAVE_URI{ "/1.1/classes/_GameSave" },
 			ME_URI{ "/1.1/users/me" },
+			FILE_TOKENS_URI{ "/1.1/fileTokens" },
+			FILE_CALLBACK_URI{ "/1.1/fileCallback" },
 			KEY_BASE64{ "6Jaa0qVAJZuXkZCLiOa/Ax5tIZVu+taKUN1V1nqwkks=" },
 			IV_BASE64{ "Kk/wisgNYwcAV8WVGMgyUw==" };
 
@@ -408,6 +432,8 @@ namespace self {
 		}
 
 		void selectControl(std::vector<uint8_t>& data,std::string_view key) {
+			this->m_decodedSaveData[key.data()] = data;
+
 			if (key == "gameKey") {
 				// pass
 			} else if (key == "gameProgress") {
@@ -515,6 +541,7 @@ namespace self {
 
 		void collectSave(const std::filesystem::path& path) {
 			std::ifstream ifs(path, std::ios::binary);
+
 			Poco::Zip::ZipArchive PocoZipArchive(ifs);
 
 			for (auto iterator{ PocoZipArchive.headerBegin() }; iterator != PocoZipArchive.headerEnd(); ++iterator) {
@@ -531,13 +558,15 @@ namespace self {
 			std::string
 				filename{ "save" };
 			
-			std::filesystem::path dir_path{ Global::PlayerSavePath + "/" + sessionToken.data() + "/" },
+			this->m_sessionToken = sessionToken.data();
+
+			std::filesystem::path dir_path{ Global::PlayerSavePath + "/" + m_sessionToken + "/" },
 				file_path{ dir_path / filename };
 
 
 			httplib::Error err{ httplib::Error::Success };
 
-			m_headers.insert({ "X-LC-Session", sessionToken.data() });
+			m_headers.insert({ "X-LC-Session", m_sessionToken });
 			httplib::Client cli(URL);
 
 			try{
@@ -576,6 +605,13 @@ namespace self {
 				} else if (res && res->status == 200) {
 					this->m_game_save_info = Json::parse(res->body);
 					this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
+
+					// ======================================================================
+					this->m_saveModel.userObjectId = this->m_game_save_info["user"]["objectId"].get<std::string>();
+					this->m_saveModel.summary = this->m_game_save_info["summary"].get<std::string>();
+					this->m_saveModel.objectId = this->m_game_save_info["objectId"].get<std::string>();
+					this->m_saveModel.gameObjectId = this->m_game_save_info["gameFile"]["objectId"].get<std::string>();
+					this->m_saveModel.checksum = this->m_game_save_info["gameFile"]["metaData"]["_checksum"].get<std::string>();
 				} else {
 					throw HTTPException(httplib::to_string(res.error()), 500, 1);
 				}
@@ -628,28 +664,28 @@ namespace self {
 			// ==========================================
 			// 存储文件(临时用)
 			bool is_exists{ false }, do_save{false};
-			SQL_Util::LocalDB << "select COUNT(sessionToken) from PlayerKey where sessionToken = ?;" << sessionToken.data() >> is_exists;
+			SQL_Util::LocalDB << "select COUNT(sessionToken) from PlayerKey where sessionToken = ?;" << m_sessionToken >> is_exists;
 			std::string key{ this->m_game_save_info["gameFile"]["key"].get<std::string>() };
 			// 如果不存在字段
 			if (!is_exists){
 				// 第一个用户新建字段
 				SQL_Util::LocalDB  << "insert into PlayerKey(sessionToken,key,nickname) values (?,?,?);"
-					<< sessionToken.data()
+					<< m_sessionToken
 					<< key
 					<< this->m_nickname;
 				do_save = true;
-				LogSystem::logInfo(std::format("已新增{}字段", sessionToken.data()));
+				LogSystem::logInfo(std::format("已新增{}字段", m_sessionToken));
 			}
 			else {
 				std::string key_old{};
-				SQL_Util::LocalDB << "select key from PlayerKey where sessionToken = ?;" << sessionToken.data() >> key_old;
+				SQL_Util::LocalDB << "select key from PlayerKey where sessionToken = ?;" << m_sessionToken >> key_old;
 				if (key_old != key) {
 					// key不相同更新字段
 					SQL_Util::LocalDB << "UPDATE PlayerKey SET key = ? WHERE sessionToken = ?"
 						<< key
-						<< sessionToken.data();
+						<< m_sessionToken;
 					do_save = true;
-					LogSystem::logInfo(std::format("已更新{}的字段", sessionToken.data()));
+					LogSystem::logInfo(std::format("已更新{}的字段", m_sessionToken));
 				}
 			}
 			// 是否需要存储呢
@@ -666,7 +702,7 @@ namespace self {
 					// 将响应体写入文件
 					file.write(result_zip->body.c_str(), result_zip->body.length());
 					file.close();
-					LogSystem::logInfo(std::format("已将{}存储到SQLite中", sessionToken.data()));
+					LogSystem::logInfo(std::format("已将{}存储到SQLite中", m_sessionToken));
 				}
 				else {
 					file.close();
@@ -674,8 +710,9 @@ namespace self {
 				}
 			}
 			// ==========================================
-
-			collectSave(result_zip->body);
+			
+			std::string saveData{ result_zip->body };
+			collectSave(saveData);
 		};
 
 		~PhiTaptapAPI() noexcept {
@@ -704,6 +741,206 @@ namespace self {
 
 		auto& getGameProgress() const {
 			return this->m_gameProgress;
+		}
+
+		auto downloaDecodeZipFile() {
+			return 0;
+		}
+
+		auto upload(const std::string& body) {
+			std::size_t dataSize = body.size();
+			std::string dataMD5 = OtherUtil::stringToMD5(body);
+			// this->m_dataSize = body.size();
+			// this->m_dataMD5 = OtherUtil::stringToMD5(body);
+			Json resFileToken{};
+
+			{
+				web::http::client::http_client client(U(URL));
+				web::http::http_request request_add_index(web::http::methods::POST);
+				request_add_index.set_request_uri(FILE_TOKENS_URI);
+				for (auto& [key, value] : m_headers){
+					request_add_index.headers().add(key, value);
+				}
+				Json contentBody{
+					{"name", ".save"},
+					{"__type", "File"},
+					{"ACL", {{
+					this->m_saveModel.userObjectId, {
+						{"read", true},
+						{"write", true}
+					}
+				}}},
+					{"prefix", "gamesaves"},
+					{"metaData", {
+						{"size", dataSize},
+						{"_checksum", dataMD5},
+						{"prefix", "gamesaves"}
+				  }}
+				};
+
+				request_add_index.set_body(web::json::value::parse(contentBody.dump()));
+
+				auto response = client.request(request_add_index).get();
+
+				if (response.status_code() >= 300 or response.status_code() < 200) {
+					auto error = response.extract_string().get();
+					throw self::HTTPException(error, 500, 12);
+				}
+
+				resFileToken = Json::parse(response.extract_json().get().serialize());
+			}
+
+			std::string tokenKey{ resFileToken["key"].get<std::string>() };
+
+			std::string tokenKeyB64{ crow::utility::base64encode(tokenKey, tokenKey.length()) };
+			std::string newGameObjectId{ resFileToken["objectId"].get<std::string>() };
+			std::string authorization{ "UpToken " + resFileToken["token"].get<std::string>() };
+
+			// fmt::print("tokenKey:{}\nnewGameObjectId:{}\nauthorization:{}\n", tokenKeyB64, newGameObjectId, authorization);
+
+			// Json
+
+			std::string uploadId{};
+			{
+				web::http::client::http_client client(U(UPLOAD_URL));
+				web::http::http_request request_add_index(web::http::methods::POST);
+				request_add_index.set_request_uri(std::format("/buckets/rAK3Ffdi/objects/{}/uploads", tokenKeyB64));
+				request_add_index.headers().add("Authorization", authorization);
+
+				auto response = client.request(request_add_index).get();
+
+				if (response.status_code() >= 300 or response.status_code() < 200) {
+					auto error = response.extract_string().get();
+					throw self::HTTPException(error, 500, 12);
+				}
+
+				Json resBody{ Json::parse(response.extract_json().get().serialize()) };
+				std::exchange(resBody, resBody[0]);
+				uploadId = resBody["uploadId"].get<std::string>();
+			}
+
+			// fmt::print("\nuploadId: {}\n", uploadId);
+			
+			std::string etag{};
+			{
+				web::http::client::http_client client(U(UPLOAD_URL));
+				web::http::http_request request_add_index(web::http::methods::PUT);
+				request_add_index.set_request_uri(std::format("/buckets/rAK3Ffdi/objects/{}/uploads/{}/1", tokenKeyB64, uploadId));
+				request_add_index.headers().add("Authorization", authorization);
+				request_add_index.headers().add("Content-Type", "application/octet-stream");
+
+				request_add_index.set_body(body);
+
+				auto response = client.request(request_add_index).get();
+
+				if (response.status_code() >= 300 or response.status_code() < 200) {
+					auto error = response.extract_string().get();
+					throw self::HTTPException(error, 500, 12);
+				}
+
+				Json resBody{ Json::parse(response.extract_json().get().serialize()) };
+				std::exchange(resBody, resBody[0]);
+				etag = resBody["etag"].get<std::string>();
+			}
+			// fmt::print("\netag: {}\n", etag);
+
+			{
+				web::http::client::http_client client(U(UPLOAD_URL));
+				web::http::http_request request_add_index(web::http::methods::POST);
+				request_add_index.set_request_uri(std::format("/buckets/rAK3Ffdi/objects/{}/uploads/{}", tokenKeyB64, uploadId));
+				request_add_index.headers().add("Authorization", authorization);
+				request_add_index.headers().add("Content-Type", "application/json");
+
+				request_add_index.set_body(web::json::value::parse("{\"parts\":[{\"partNumber\":1,\"etag\":\"" + etag + "\"}]}"));
+
+				auto response = client.request(request_add_index).get();
+
+				if (response.status_code() >= 300 or response.status_code() < 200) {
+					auto error = response.extract_string().get();
+					throw self::HTTPException(error, 500, 12);
+				}
+
+				Json resBody{ Json::parse(response.extract_json().get().serialize()) };
+				// std::cout << resBody << std::endl;
+			}
+
+			{
+				web::http::client::http_client client(U(URL));
+				web::http::http_request request_add_index(web::http::methods::POST);
+				request_add_index.set_request_uri(FILE_CALLBACK_URI);
+				for (auto& [key, value] : m_headers) {
+					request_add_index.headers().add(key, value);
+				}
+				request_add_index.headers().add("Content-Type", "application/json");
+
+				request_add_index.set_body(web::json::value::parse("{\"result\":true,\"token\":\"" + tokenKeyB64 + "\"}"));
+
+				auto response = client.request(request_add_index).get();
+
+				if (response.status_code() >= 300 or response.status_code() < 200) {
+					auto error = response.extract_string().get();
+					throw self::HTTPException(error, 500, 12);
+				}
+
+				Json resBody{ Json::parse(response.extract_json().get().serialize()) };
+
+				// std::cout << resBody << std::endl;
+			}
+
+			{
+				// 获取时间相关
+				auto currentTimePoint = std::chrono::system_clock::now();
+				std::time_t time = std::chrono::system_clock::to_time_t(currentTimePoint);
+				auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimePoint.time_since_epoch()) % 1000;
+				std::tm tmInfo = *std::gmtime(&time);
+				std::ostringstream oss;
+				oss << std::put_time(&tmInfo, "%Y-%m-%dT%H:%M:%S") << "." << std::setfill('0') << std::setw(3) << milliseconds.count() << "Z";
+
+				// oss.str()
+
+				// 发送请求
+				web::http::client::http_client client(U(URL));
+				web::http::http_request request_add_index(web::http::methods::PUT);
+				request_add_index.set_request_uri("/1.1/classes/_GameSave/" + this->m_saveModel.objectId + "?");
+				for (auto& [key, value] : m_headers) {
+					request_add_index.headers().add(key, value);
+				}
+				request_add_index.headers().add("Content-Type", "application/json");
+
+				request_add_index.set_body(web::json::value::parse("{\"summary\":\"" + this->m_saveModel.summary + "\",\"modifiedAt\":{\"__type\":\"Date\",\"iso\":\"" + oss.str() + "\"},\"gameFile\":{\"__type\":\"Pointer\",\"className\":\"_File\",\"objectId\":\"" + newGameObjectId + "\"},\"ACL\":{\"" + this->m_saveModel.userObjectId + "\":{\"read\":true,\"write\":true}},\"user\":{\"__type\":\"Pointer\",\"className\":\"_User\",\"objectId\":\"" + this->m_saveModel.userObjectId + "\"}}"));
+
+				auto response = client.request(request_add_index).get();
+
+				if (response.status_code() >= 300 or response.status_code() < 200) {
+					auto error = response.extract_string().get();
+					throw self::HTTPException(error, 500, 12);
+				}
+
+				Json resBody{ Json::parse(response.extract_json().get().serialize()) };
+
+				// std::cout << resBody << std::endl;
+			}
+
+			{
+				web::http::client::http_client client(U(URL));
+				web::http::http_request request_add_index(web::http::methods::DEL);
+				request_add_index.set_request_uri("/1.1/files/" + this->m_saveModel.gameObjectId);
+				for (auto& [key, value] : m_headers) {
+					request_add_index.headers().add(key, value);
+				}
+				auto response = client.request(request_add_index).get();
+
+				if (response.status_code() >= 300 or response.status_code() < 200) {
+					auto error = response.extract_string().get();
+					throw self::HTTPException(error, 500, 12);
+				}
+
+				Json resBody{ Json::parse(response.extract_json().get().serialize()) };
+
+				// std::cout << resBody << std::endl;
+			}
+
+			return true;
 		}
 	};
 }

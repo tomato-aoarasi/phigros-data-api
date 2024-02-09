@@ -888,7 +888,7 @@ from phigros where title like \"%" + match_title + "%\"" };
 			}
 			}).wait();
 
-			return "ok";
+		return "ok";
 	}
 
 	Json getBatch(const UserData& authentication, std::string_view sessionToken, float rating1, float rating2) override {
@@ -1129,6 +1129,13 @@ WHERE
 		if (result.is_null()) result = Json::parse("[]");
 
 		return result;
+	};
+
+	std::string upload(const UserData& authentication, std::string_view sessionToken, const std::string& data) {
+		self::PhiTaptapAPI phiAPI(sessionToken);
+		phiAPI.upload(data);
+
+		return "ok";
 	};
 private:
 };

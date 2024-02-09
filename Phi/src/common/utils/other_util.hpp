@@ -22,6 +22,10 @@
 
 #ifndef OTHER_UTIL
 #define OTHER_UTIL  
+#include <Poco/DigestEngine.h>
+#include <Poco/DigestStream.h>
+#include <Poco/MD5Engine.h>
+#include <Poco/StreamCopier.h>
 
 using namespace std::chrono_literals;
 using uchar = unsigned char;
@@ -185,6 +189,34 @@ namespace OtherUtil{
             pos = str.find(from, pos + to.length());
         }
     };
+
+    std::string fileToMD5(const std::filesystem::path& filePath) {
+        static constexpr const char* HEX_TABLE = "0123456789abcdef";
+        Poco::MD5Engine md5Engine;
+        Poco::DigestOutputStream outputStream(md5Engine);
+        std::ifstream fileStream(filePath);
+        Poco::StreamCopier::copyStream(fileStream, outputStream);
+        outputStream.close();
+
+        auto& md5Val = md5Engine.digest();
+        std::string res = "";
+        for (int i = 0; i < 16; ++i) {
+            uint8_t c = md5Val.data()[i];
+            res += HEX_TABLE[c >> 4];
+            res += HEX_TABLE[c & 15];
+        }
+        return res;
+    }
+
+    std::string stringToMD5(const std::string& source){
+        Poco::MD5Engine md5;
+        Poco::DigestOutputStream dos(md5);
+        std::istringstream iStr(source);
+        Poco::StreamCopier::copyStream(iStr, dos);
+        dos.close();
+
+        return Poco::DigestEngine::digestToHex(md5.digest());
+    }
 };
 
 #endif // OTHER_UTIL

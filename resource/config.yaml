@@ -11,12 +11,13 @@ db:
     phi-player: "./PlayerRecords.db"
 
 search-engine:
-    meilisearch: 
+    meilisearch:
         url: "http://127.0.0.1:7700"
         authorization: "1145141919810893"
 
 server:
   data-url: "https://rak3ffdi.cloud.tds1.tapapis.cn"
+  upload-data-url: "https://upload.qiniup.com"
   redis:
     ip: "127.0.0.2"
     port: 6379
