@@ -458,7 +458,7 @@ namespace self {
 					if (front_byte_data != 0) {
 						auto back_byte_data{ reader.ReadByte() };
 						// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(back_byte_data) << std::endl;
-						if (back_byte_data != 0) {
+						if (back_byte_data != 0 and back_byte_data < 9) {
 							data = (back_byte_data - 1) * 128 + front_byte_data;
 						}
 						else {
