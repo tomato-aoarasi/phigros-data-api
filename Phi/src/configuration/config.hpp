@@ -115,10 +115,11 @@ public:
 	class Parameter final {
 		friend class Config;
 	protected:
-		inline static std::string ms_secret{}, ms_issuer{};
+		// inline static std::string ms_secret{}, ms_issuer{};
 		inline static ushort ms_port{};
 		inline static int ms_concurrency{};
 	public:
+		/*
 		static const std::string& getSecret(void){
 			return ms_secret;
 		}
@@ -126,6 +127,7 @@ public:
 		static const std::string& getIssuer(void){
 			return ms_issuer;
 		}
+		*/
 
 		static const ushort& getPort(void){
 			return ms_port;
@@ -160,8 +162,8 @@ public:
 		
 		/* =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= */
 
-		Parameter::ms_secret = getConfig()["server"]["token"]["secret"].as<std::string>();
-		Parameter::ms_issuer = getConfig()["server"]["token"]["issuer"].as<std::string>();
+		// Parameter::ms_secret = getConfig()["server"]["token"]["secret"].as<std::string>();
+		// Parameter::ms_issuer = getConfig()["server"]["token"]["issuer"].as<std::string>();
 		Parameter::ms_port = getConfig()["server"]["port"].as<ushort>();
 		Parameter::ms_concurrency = getConfig()["server"]["concurrency"].as<int>();
 		Global::IsPlanB = Config::getConfig()["other"]["plan-b"].as<bool>();

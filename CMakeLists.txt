@@ -13,7 +13,7 @@ CACHE STRING "Vcpkg toolchain file")
 file(GLOB allCopyFiles  "${CMAKE_CURRENT_SOURCE_DIR}/resource/*")
 file(COPY ${allCopyFiles} DESTINATION ${PROJECT_ROOT_NODE}/bin)
 
-project ("PhigrosCrowAPI")
+project ("PhigrosDataAPI")
 
 # 包含子项目。
 add_subdirectory(Phi)

@@ -20,6 +20,7 @@ namespace std {
     using fmt::format_error;
     using fmt::formatter;
 }
+
 #include <configuration/config.hpp>
 #include "common/utils.hpp"
 #include "common/self_exception.hpp"
@@ -27,7 +28,7 @@ namespace std {
 #include "common/crow_middleware.hpp"
 #include "common/log_system.hpp"
 
-#include <restbed>
+// #include <restbed>
 #include <ctime>
 #include <cpprest/http_client.h>
 
@@ -52,9 +53,10 @@ inline void init(void) {
     int port_min { Config::config_yaml["other"]["exec-port-min"].as<int>() },
         port_max { Config::config_yaml["other"]["exec-port-max"].as<int>() },
         unified_threads{ Config::config_yaml["other"]["unified-threads"].as<int>() };
+    std::int64_t start_delay{ Config::config_yaml["other"]["start-delay"].as<std::int64_t>() };
 
     for (int port{ port_min }; port <= port_max; ++port) {
-        std::string command{ std::format("{}/CrowAPI --port={} --concurrency={} --sid={} &",std::filesystem::current_path().c_str(),port,unified_threads,Global:: proxy_count) };
+        std::string command{ std::format("{}/start --port={} --concurrency={} --sid={} &",std::filesystem::current_path().c_str(),port,unified_threads,Global:: proxy_count) };
         auto status_code { std::system(command.c_str()) };
 
         if (status_code != 0)
@@ -62,7 +64,7 @@ inline void init(void) {
             throw std::runtime_error("Startup failed with error code "s + std::to_string(status_code) + " .");
         }
 
-        std::this_thread::sleep_for(50ms);
+        std::this_thread::sleep_for(std::chrono::milliseconds(start_delay));
         ++Global::proxy_count;
     }
 

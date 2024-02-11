@@ -6,7 +6,7 @@ cmake_minimum_required (VERSION 3.22)
 # CMAKE默认设置release版
 set(CMAKE_BUILD_TYPE"Release" CACHE STRING"" FORCE)
 
-project ("ProxyLoadBalancingAPI")
+project ("multi-start")
 
 set(CMAKE_C_COMPILER "/usr/local/bin/gcc")
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
@@ -40,17 +40,6 @@ include_directories(VCPKG_INCLUDE)
 include_directories(LOCAL_INCLUDE)
 include_directories(GLOBAL_INCLUDE)
 
-# boost
-set(BOOST_INCLUDE_PATH /usr/include/boost)
-include_directories(${BOOST_INCLUDE_PATH})
-
-# OpenSSL
-include_directories(${OPENSSL_INCLUDE_DIR})
-
-# SQLite Modern C++
-set(SQLITE_MODERN_INCLUDE_PATH ${VCPKG_ROOT}/packages/sqlite-modern-cpp_x64-linux)
-include_directories(${SQLITE_MODERN_INCLUDE_PATH}/include)
-
 find_package(cryptopp CONFIG REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -61,6 +50,7 @@ find_package(fmt REQUIRED)
 find_package(cpprestsdk REQUIRED)
 find_package(PythonInterp REQUIRED)
 find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
 find_package(Crow)
 find_package(PkgConfig)
 #pkg_check_modules(Pistache REQUIRED IMPORTED_TARGET libpistache)
@@ -69,16 +59,13 @@ add_definitions(-DCROW_ENABLE_SSL)
 set(CROW_ENABLE_SSL ON)
 
 find_path(SQLITE_MODERN_CPP_INCLUDE_DIRS "sqlite_modern_cpp.h")
+include_directories(${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 # find_package(libgo CONFIG REQUIRED)
 # find_package(Poco REQUIRED Net)
 # find_package(Poco REQUIRED JSON)
 # find_package(Poco REQUIRED Util)
 
-set(SQLITE_PP_PATH     ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/sqlitepp)
-include_directories(${SQLITE_PP_PATH}/include)
-
 # 导入a
-link_directories(${SQLITE_PP_PATH}/lib)
 link_directories(${VCPKG_LIB})
 # 三方库结束
 
@@ -97,7 +84,7 @@ add_executable (${PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${OPENSSL_LIBRARIES} ${SQLITE_MODERN_CPP_INCLUDE_DIRS}
 nlohmann_json::nlohmann_json fmt::fmt sqlite3 unofficial::sqlite3::sqlite3 yaml-cpp 
 Crow::Crow cpprestsdk::cpprest spdlog::spdlog cryptopp::cryptopp #unofficial::restbed::restbed-static
-libSQLitePP.a)
+)
 
 message(G:${CMAKE_C_COMPILER_VERSION},GXX:${CMAKE_CXX_COMPILER_VERSION},CXX STANDARD:${CMAKE_CXX_STANDARD})
 message(final)

@@ -130,9 +130,11 @@ inline void ProcessInfoSQLInit(unsigned int sid,unsigned int pid, ushort port) {
 
 // 启动项
 inline void start(std::string_view p, std::string_view c, std::string_view sid){
+    /*
     const std::string
         secret{ Config::Parameter::getSecret()},
         issuer{ Config::Parameter::getIssuer()};
+    */
     unsigned int pid = getpid();
     const ushort port{ p == "65536" ? Config::Parameter::getPort() : static_cast<ushort>(std::stoul(p.data())) };
     const int concurrency{ c.empty() ? Config::Parameter::getConcurrency() : static_cast<int>(std::stoi(c.data())) };
@@ -168,9 +170,9 @@ inline void start(std::string_view p, std::string_view c, std::string_view sid){
     // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
     // ArcaeaService
-    std::unique_ptr<ArcaeaService> arcaea{ new ArcaeaServiceImpl() };
-    ArcaeaController arcaea_controller(app, secret, issuer, std::move(arcaea));
-    arcaea_controller.controller();
+    // std::unique_ptr<ArcaeaService> arcaea{ new ArcaeaServiceImpl() };
+    // ArcaeaController arcaea_controller(app, secret, issuer, std::move(arcaea));
+    // arcaea_controller.controller();
     // PhigrosService
     std::unique_ptr<PhigrosService> phigros{ new PhigrosServiceImpl() };
     PhigrosController phigros_controller(app, std::move(phigros));

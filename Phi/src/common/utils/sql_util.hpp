@@ -15,7 +15,6 @@
 #include "common/utils/log_system.hpp"
 #include "configuration/config.hpp"
 #include "common/exception/self_exception.hpp"
-#include "sqlite3pp.h"
 #include "sqlite3.h"
 
 #ifndef SQL_UTIL_HPP

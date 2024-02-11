@@ -11,7 +11,6 @@
 
 #include <memory>
 #include <nlohmann/json.hpp>
-#include "jwt-cpp/jwt.h"
 
 #ifndef HTTP_UTIL
 #define HTTP_UTIL  

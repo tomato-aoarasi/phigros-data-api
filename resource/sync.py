@@ -1,5 +1,7 @@
 import sqlite3
 
+# 用于判断数据库是否有问题的脚本
+
 def connect_sql():
     return sqlite3.connect("./PhigrosInfo.db")
 

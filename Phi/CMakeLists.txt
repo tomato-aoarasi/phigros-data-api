@@ -6,7 +6,7 @@ cmake_minimum_required (VERSION 3.22)
 # CMAKE默认设置release版
 set(CMAKE_BUILD_TYPE"Release" CACHE STRING"" FORCE)
 
-project ("CrowAPI")
+project ("start")
 
 set(CMAKE_C_COMPILER "/usr/local/bin/gcc")
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
@@ -40,20 +40,9 @@ include_directories(VCPKG_INCLUDE)
 include_directories(LOCAL_INCLUDE)
 include_directories(GLOBAL_INCLUDE)
 
-# boost
-set(BOOST_INCLUDE_PATH /usr/include/boost)
-include_directories(${BOOST_INCLUDE_PATH})
-
-# redis
-set(HIREDIS_INCLUDE_PATH /usr/include/hiredis)
-include_directories(${HIREDIS_INCLUDE_PATH})
-
-# OpenSSL
-include_directories(${OPENSSL_INCLUDE_DIR})
-
 # SQLite Modern C++
-set(SQLITE_MODERN_INCLUDE_PATH ${VCPKG_ROOT}/packages/sqlite-modern-cpp_x64-linux)
-include_directories(${SQLITE_MODERN_INCLUDE_PATH}/include)
+# set(SQLITE_MODERN_INCLUDE_PATH ${VCPKG_ROOT}/packages/sqlite-modern-cpp_x64-linux)
+# include_directories(${SQLITE_MODERN_INCLUDE_PATH}/include)
 
 # openssl封装库
 find_package(cryptopp CONFIG REQUIRED)
@@ -66,9 +55,11 @@ find_package(fmt REQUIRED)
 find_package(cpprestsdk REQUIRED)
 find_package(PythonInterp REQUIRED)
 find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
 find_package(Crow)
 find_package(Boost REQUIRED COMPONENTS coroutine)
 find_path(SQLITE_MODERN_CPP_INCLUDE_DIRS "sqlite_modern_cpp.h")
+include_directories(${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 # find_package(libgo CONFIG REQUIRED)
 #POCO引入
 find_package(Poco REQUIRED COMPONENTS Foundation Zip Util)
@@ -86,16 +77,9 @@ include_directories(${AES_PATH}/include)
 set(BCRYPT_PATH     ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Bcrypt-cpp-master)
 include_directories(${BCRYPT_PATH}/include)
 
-set(SQLITE_PP_PATH     ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/sqlitepp)
-include_directories(${SQLITE_PP_PATH}/include)
-
 include_directories(${Poco_INCLUDE_DIRS}})
 
-# reids封装库
-find_library(REDIS_PLUS_PLUS_LIB redis++)
-
 # 导入a
-link_directories(${SQLITE_PP_PATH}/lib)
 link_directories(${BCRYPT_PATH}/lib)
 link_directories(${GOLIB_PATH}/lib)
 link_directories(${VCPKG_LIB})
@@ -116,11 +100,11 @@ add_executable (${PROJECT_NAME} ${SRC_LIST})
 #target_include_directories(${PROJECT_NAME} private ${QRENCODE_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCV_LIBS} ${OPENSSL_LIBRARIES} ${QRENCODE_LIBRARY_RELEASE} ${Poco_LIBRARIES}
-${SQLITE_MODERN_CPP_INCLUDE_DIRS} ${REDIS_PLUS_PLUS_LIB}
-Crow::Crow cpprestsdk::cpprest hiredis nlohmann_json::nlohmann_json
+${SQLITE_MODERN_CPP_INCLUDE_DIRS}
+Crow::Crow cpprestsdk::cpprest nlohmann_json::nlohmann_json
 fmt::fmt sqlite3 unofficial::sqlite3::sqlite3 yaml-cpp Boost::coroutine
 spdlog::spdlog cryptopp::cryptopp #libgo::libgo
-libbcrypt.a libSQLitePP.a)
+libbcrypt.a)
 
 message(G:${CMAKE_C_COMPILER_VERSION},GXX:${CMAKE_CXX_COMPILER_VERSION},CXX STANDARD:${CMAKE_CXX_STANDARD})
 message(final)
