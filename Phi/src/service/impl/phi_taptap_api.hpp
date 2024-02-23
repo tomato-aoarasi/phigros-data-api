@@ -35,7 +35,7 @@
 
 using ubyte = unsigned char;
 
-#if 1
+#if 0
 void HexDebug(const auto& content) {
 	std::uint32_t hits{ 0 };
 	for (const auto& data : content)
@@ -457,11 +457,13 @@ namespace self {
 					// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(front_byte_data) << ",";
 					if (front_byte_data != 0) {
 						auto back_byte_data{ reader.ReadByte() };
+						auto next_byte_data{ reader.ReadByte() }; // 获取到下一个data
+						reader.setPosition(reader.getPosition() - 1);
 						// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(back_byte_data) << std::endl;
-						if (back_byte_data != 0 and back_byte_data < 9) {
+						
+						if (back_byte_data > 0 and back_byte_data <= 8 and next_byte_data != 0) {
 							data = (back_byte_data - 1) * 128 + front_byte_data;
-						}
-						else {
+						} else {
 							data = front_byte_data;
 							reader.setPosition(reader.getPosition() - 1);
 						}
