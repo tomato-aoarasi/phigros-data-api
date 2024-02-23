@@ -458,10 +458,13 @@ namespace self {
 					if (front_byte_data != 0) {
 						auto back_byte_data{ reader.ReadByte() };
 						auto next_byte_data{ reader.ReadByte() }; // 获取到下一个data
+
+						// std::cout << "(" << static_cast<int>(front_byte_data) << ", " << static_cast<int>(back_byte_data) << ", " << static_cast<int>(next_byte_data) << ")" << std::endl;
+
 						reader.setPosition(reader.getPosition() - 1);
 						// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(back_byte_data) << std::endl;
 						
-						if (back_byte_data > 0 and back_byte_data <= 8 and next_byte_data != 0) {
+						if (back_byte_data >= 1 and back_byte_data <= 8 and not(next_byte_data == 0 and back_byte_data == 1)) {
 							data = (back_byte_data - 1) * 128 + front_byte_data;
 						} else {
 							data = front_byte_data;
