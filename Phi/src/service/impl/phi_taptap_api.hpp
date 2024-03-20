@@ -453,6 +453,18 @@ namespace self {
 				}
 
 				for (auto& data : this->m_gameProgress.data) {
+					std::vector<uint8_t> buffer;
+					uint8_t varint_data_1{ reader.ReadByte() };
+					if(varint_data_1 < 0x80){
+						buffer.push_back(varint_data_1);
+					} else {
+						uint8_t varint_data_2{ reader.ReadByte() };
+						buffer.push_back(varint_data_1);
+						buffer.push_back(varint_data_2);
+					}
+					const uint8_t* buffer_data = buffer.data();
+					data = OtherUtil::Varint::read(&buffer_data);
+					/*
 					auto front_byte_data{ reader.ReadByte() };
 					// std::cout << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << static_cast<int>(front_byte_data) << ",";
 					if (front_byte_data != 0) {
@@ -471,6 +483,7 @@ namespace self {
 							reader.setPosition(reader.getPosition() - 1);
 						}
 					}
+					*/
 				}
 
 				this->m_gameProgress.unlockFlagOfSpasmodic = reader.ReadByte();

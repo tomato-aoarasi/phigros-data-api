@@ -217,6 +217,44 @@ namespace OtherUtil{
 
         return Poco::DigestEngine::digestToHex(md5.digest());
     }
+
+    // varint相关
+    namespace Varint {
+        // 第一个传要的值
+        inline void write(uint64_t value, std::vector<uint8_t>& buffer) {
+            while (value > 0) {
+                uint8_t byte = value & 0x7F; // 取低7位
+                value >>= 7;                // 高位向低位移动
+                if (value > 0) {            // 如果还有更多位，则将最高位设为1
+                    byte |= 0x80;
+                }
+                buffer.push_back(byte);
+            }
+        }
+
+        /// <summary>
+        /// 使用例:
+        /// std::vector<uint8_t> buffer {0x56, 0x7};
+        /// const uint8_t* data = buffer.data();
+        /// uint64_t readNum = ReadVarint(&data);
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        inline uint64_t read(const uint8_t** data) {
+            uint64_t result = 0;
+            uint32_t shift = 0;
+            const uint8_t* ptr = *data;
+            while (true) {
+                uint8_t byte = *ptr++;
+                result |= (uint64_t)(byte & 0x7F) << shift; // 取低7位
+                shift += 7;
+                if ((byte & 0x80) == 0) { // 如果最高位为0，表示读取完毕
+                    *data = ptr;
+                    return result;
+                }
+            }
+        }
+    }
 };
 
 #endif // OTHER_UTIL
