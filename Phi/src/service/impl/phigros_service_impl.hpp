@@ -144,6 +144,8 @@ public:
 		//std::cout << "\n=====================\n";
 		auto playerSummary{ phiAPI.GetSummary() };
 
+		playerSummary.ChallengeModeRank = phiAPI.getGameProgress().challengeModeRank;
+
 		// 玩家记录
 		player_records(sessionToken, playerSummary);
 
@@ -356,6 +358,8 @@ public:
 
 		auto playerSummary{ phiAPI.GetSummary() };
 		auto playerData{ phiAPI.getUserData() };
+
+		playerSummary.ChallengeModeRank = phiAPI.getGameProgress().challengeModeRank;
 
 		// 玩家记录
 		player_records(sessionToken, playerSummary);
@@ -902,6 +906,8 @@ from phigros where title like \"%" + match_title + "%\"" };
 			Json data;
 			auto playerSummary{ phiAPI.GetSummary() };
 			auto playerData{ phiAPI.getUserData() };
+
+			playerSummary.ChallengeModeRank = phiAPI.getGameProgress().challengeModeRank;
 
 			// 玩家记录
 			player_records(sessionToken, playerSummary);

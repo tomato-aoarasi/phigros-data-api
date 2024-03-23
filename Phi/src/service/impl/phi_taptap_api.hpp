@@ -35,7 +35,7 @@
 
 using ubyte = unsigned char;
 
-#if 0
+#if 1
 void HexDebug(const auto& content) {
 	std::uint32_t hits{ 0 };
 	for (const auto& data : content)
@@ -73,6 +73,16 @@ namespace self {
 		uint8_t ReadByte() {
 			uint8_t value = data_[pos_];
 			pos_ += 1;
+			return value;
+		}
+
+		int16_t ReadInt16() {
+			int16_t value;
+			std::memcpy(&value, &data_[pos_], sizeof(value));
+			if (big_endian_) {
+				OtherUtil::littleBigEndianConversion<int16_t>(value);
+			}
+			pos_ += sizeof(value);
 			return value;
 		}
 
@@ -437,6 +447,7 @@ namespace self {
 			if (key == "gameKey") {
 				// pass
 			} else if (key == "gameProgress") {
+				// HexDebug(data);
 				BinaryReader reader(data);
 
 				this->m_gameProgress.isFirstRun = reader.ReadByte();
@@ -447,10 +458,13 @@ namespace self {
 					this->m_gameProgress.completed = reader.ReadByte();
 					this->m_gameProgress.songUpdateInfo = reader.ReadByte();
 				}
-				auto challengeModeRankFrontByte{ reader.ReadByte() };
+				this->m_gameProgress.challengeModeRank = reader.ReadInt16();
+
+				/*
 				if (challengeModeRankFrontByte != 0) {
 					this->m_gameProgress.challengeModeRank = static_cast<short>((reader.ReadByte() << 8) | challengeModeRankFrontByte);
 				}
+				*/
 
 				for (auto& data : this->m_gameProgress.data) {
 					std::vector<uint8_t> buffer;
