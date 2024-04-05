@@ -566,6 +566,10 @@ namespace self {
 				std::string filename = header.getFileName();
 				// Poco::UInt32 fileSize = header.getUncompressedSize();
 				// std::cout << "filename: " << filename << "\nsize: " << fileSize << std::endl;
+
+				iss.clear(); // 清除流的错误状态
+				iss.seekg(0); // 将读取位置移动到流的开头
+
 				auto data{ unzip(iss, header) };
 				selectControl(data, filename);
 			}
@@ -581,6 +585,10 @@ namespace self {
 				std::string filename = header.getFileName();
 				// Poco::UInt32 fileSize = header.getUncompressedSize();
 				// std::cout << "filename: " << filename << "\nsize: " << fileSize << std::endl;
+
+				ifs.clear(); // 清除流的错误状态
+				ifs.seekg(0); // 将读取位置移动到流的开头
+
 				auto data{ unzip(ifs, header) };
 				selectControl(data, filename);
 			}
