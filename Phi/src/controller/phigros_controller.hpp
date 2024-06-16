@@ -714,7 +714,7 @@ public:
 				{
 					throw self::HTTPException("", 401, 6);
 				}
-				float rating1{}, rating2{ -1.0f };
+				float rating1{}, rating2{ MIN_RATING_CHECK - 1.0f };
 
 				if (OtherUtil::verifyParam(req, "rating1")) {
 					rating1 = std::stof(req.url_params.get("rating1"));

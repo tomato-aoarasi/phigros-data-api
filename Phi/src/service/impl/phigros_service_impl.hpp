@@ -18,6 +18,8 @@
 #include <common/utils/prevent_inject.hpp>
 #include <Poco/URI.h>
 
+constexpr const float MIN_RATING_CHECK = -1000.0f;
+
 class PhigrosServiceImpl : public PhigrosService {
 private:
 	const std::array<std::string, 5> disk_capacity_unit{ "KiB", "MiB", "GiB", "TiB", "PiB" };
@@ -1059,13 +1061,13 @@ WHERE
 		return result;
 	}
 
-	Json getRating(const UserData& authentication, float rating1, float rating2 = -1) override {
+	Json getRating(const UserData& authentication, float rating1, float rating2 = -1/*, bool support_special = false*/) override {
 		Json result;
 
-		if (rating1 < 0) {
+		if (rating1 < MIN_RATING_CHECK) {
 			throw self::HTTPException("", 400, 11);
 		}
-		if (rating2 < 0) {
+		if (rating2 < MIN_RATING_CHECK) {
 			rating2 = rating1;
 		}
 
