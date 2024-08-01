@@ -225,11 +225,6 @@ public:
 						singlePhi.insert(std::make_pair(rks, info));
 					}
 					rksSort.insert(std::make_pair(rks, info));
-
-					/*std::cout << "[" << difficulty << " / " << rate << "] Score: " << score
-						<< ", Acc: " << acc << ", RankingSocre: " << rks
-						<< ", Is FC: " << is_fc
-						<< '\n';*/
 				}
 				catch (const std::out_of_range e)
 				{
@@ -246,16 +241,10 @@ public:
 		size_t count{ 0 };
 		for (const auto& [key, value] : singlePhi) {
 			++count;
-			/*
-			std::cout << "(phi) -- [" << value.title << " / " << value.difficulty << " / " << value.level << "] Score: " << value.score
-				<< ", Acc: " << value.acc << ", RankingSocre: " << value.rks
-				<< ", Is FC: " << value.is_fc
-				<< '\n';
-			*/
 			Json j{
 				{"ranking", 0}, // 0 = "phi"
 				{"acc", value.acc},
-				{"rankingSocre", value.rks},
+				{"rankingScore", value.rks},
 				{"score", value.score},
 				{"difficulty", value.difficulty},
 				{"title", value.title},
@@ -280,17 +269,10 @@ public:
 		count = 0;
 		for (const auto& [key, value] : rksSort) {
 			++count;
-			/*
-			std::cout << "(" << count << ") -- [" << value.title << " / " << value.difficulty << " / " << value.level << "] Score: " << value.score
-				<< ", Acc: " << value.acc << ", RankingSocre: " << value.rks
-				<< ", Is FC: " << value.is_fc
-				<< '\n';
-			std::cout << "\n=====================\n";
-			*/
 			Json j{
 				{"ranking", count},
 				{"acc", value.acc},
-				{"rankingSocre", value.rks},
+				{"rankingScore", value.rks},
 				{"score", value.score},
 				{"difficulty", value.difficulty},
 				{"title", value.title},

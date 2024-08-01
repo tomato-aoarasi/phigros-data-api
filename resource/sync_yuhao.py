@@ -17,6 +17,7 @@ if __name__ == "__main__":
         data = json.load(file)  
     
     for sid, info in data["regularSongs"].items():
+        print(sid)
         database_info = connect_sql().execute(f'SELECT * FROM phigros WHERE sid = "{sid}"').fetchall()
         database_info = database_info[0]
         # print(database_info)
@@ -56,7 +57,7 @@ if __name__ == "__main__":
         
         if not conditionTitle:
             print(f'[{sid}] 标题错误')
-            print(f'{title}\n{info["title"]}\n')
+            print(f'{title}\n{info["songsName"]}\n')
             
         if not conditionArtist:
             print(f'[{sid}] 曲师错误')

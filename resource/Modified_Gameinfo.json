@@ -1,5 +1,11 @@
 {
     "allSongs": [
+        "BoundedQuietude.FiniteLimitvsSiLiS.0",
+        "今天不是明天.PIKASONICfeat兰音Reine.0",
+        "Bloom.targ麻团qwq.0",
+        "ShineAfter.ADeanJocularACE.0",
+        "PRAGMATISMRESURRECTION.Laur.0",
+        "Antithese.Blacklolita.0",
         "BRAINHACKER.SOMON.0",
         "BrokenSky.JungoMAX3feat刘佳宜Snow幻影刃shadow.0",
         "CrushBETA.shadow_bling.0",
@@ -159,11 +165,16 @@
         "FreakyUndulationsNobleKnightsofTune.JehezukielKURORAK.0",
         "PANICPARADISE.DJSHIONY.0",
         "ReEndofaDream.umavsモリモリあつし.0",
+        "Cuvism.Fl00tvsHalv.0",
+        "iLArtifact.Link0.0",
+        "atruthseekerCommunicationwithUtopiawillbelost.kuro.0",
+        "幽世桔梗.Capchiifeatまるもこ.0",
+        "千紫万紅.r0yvsWABI.0",
+        "明鏡烈火.MUEvsRekuMochizuki.0",
         "零號車輛.seatrus.0",
         "Xenolith.Tatsh.0",
         "ArtificialExistence.JunKuroda.0",
         "IndelibleScar.Noah.0",
-        "テリトリーバトル.ツユ.0",
         "TECHNOPOLIS2085.PRASTIKDANCEFLOOR.0",
         "祈-我ら神祖と共に歩む者なり-.光吉猛修VS穴山大輔VSKaiVS水野健治VS大国奏音.0",
         "JourneywithYou.Iris.0",
@@ -222,6 +233,192 @@
         "Chronostasis.黒皇帝.0"
     ],
     "regularSongs": {
+        "BoundedQuietude.FiniteLimitvsSiLiS.0": {
+            "chapterCode": "Single",
+            "unlockType": 1,
+            "songsName": "Bounded Quietude",
+            "composer": "Finite Limit vs SiLiS",
+            "illustrator": "Hiro vs Zeth",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 7.0,
+                    "charter": "LonelyKnight",
+                    "numOfNotes": 1127
+                },
+                "HD": {
+                    "rating": 7.5,
+                    "charter": "LonelyKnight",
+                    "numOfNotes": 303
+                },
+                "IN": {
+                    "rating": 15.9,
+                    "charter": "孤独な騎士 Against 魔王、大咩兔",
+                    "numOfNotes": 1286
+                }
+            }
+        },
+        "今天不是明天.PIKASONICfeat兰音Reine.0": {
+            "chapterCode": "Single",
+            "unlockType": 1,
+            "songsName": "今天不是明天",
+            "composer": "PIKASONIC feat. 兰音Reine",
+            "illustrator": "KiTA & 一击即溃",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 3.0,
+                    "charter": "扫佛不是嫂夫",
+                    "numOfNotes": 294
+                },
+                "HD": {
+                    "rating": 8.5,
+                    "charter": "扫佛不是嫂夫",
+                    "numOfNotes": 546
+                },
+                "IN": {
+                    "rating": 13.5,
+                    "charter": "杂波不是杂啵，野从不是野丛",
+                    "numOfNotes": 913
+                }
+            }
+        },
+        "Bloom.targ麻团qwq.0": {
+            "chapterCode": "Single",
+            "unlockType": 1,
+            "songsName": "Bloom",
+            "composer": "targ & 麻团qwq",
+            "illustrator": "注射",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 3.5,
+                    "charter": "Salt & Barbarianerman",
+                    "numOfNotes": 183
+                },
+                "HD": {
+                    "rating": 11.2,
+                    "charter": "Salt & Barbarianerman",
+                    "numOfNotes": 724
+                },
+                "IN": {
+                    "rating": 14.9,
+                    "charter": "SPΔDE & 倪尔qwq",
+                    "numOfNotes": 1053
+                }
+            }
+        },
+        "ShineAfter.ADeanJocularACE.0": {
+            "chapterCode": "Single",
+            "unlockType": 1,
+            "songsName": "Shine After",
+            "composer": "ADean & JocularACE",
+            "illustrator": "海里狄七 feat. 存艺",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 4.0,
+                    "charter": "Su1fuR",
+                    "numOfNotes": 262
+                },
+                "HD": {
+                    "rating": 9.9,
+                    "charter": "Su1fuR",
+                    "numOfNotes": 647
+                },
+                "IN": {
+                    "rating": 14.6,
+                    "charter": "Salt & Uvernight",
+                    "numOfNotes": 800
+                }
+            }
+        },
+        "PRAGMATISMRESURRECTION.Laur.0": {
+            "chapterCode": "Single",
+            "unlockType": 1,
+            "songsName": "PRAGMATISM -RESURRECTION-",
+            "composer": "Laur",
+            "illustrator": "シエラ (Design: 祈莲)",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN",
+                    "AT"
+                ],
+                "EZ": {
+                    "rating": 7.5,
+                    "charter": "完璧 [WARNING: DRAG OVERLOAD]",
+                    "numOfNotes": 1057
+                },
+                "HD": {
+                    "rating": 12.9,
+                    "charter": "完璧 × 北星",
+                    "numOfNotes": 661
+                },
+                "IN": {
+                    "rating": 15.6,
+                    "charter": "-NerSAN & Su1fuR-",
+                    "numOfNotes": 999
+                },
+                "AT": {
+                    "rating": 16.3,
+                    "charter": "THE LAST 198",
+                    "numOfNotes": 1156
+                }
+            }
+        },
+        "Antithese.Blacklolita.0": {
+            "chapterCode": "Single",
+            "unlockType": 1,
+            "songsName": "Antithese",
+            "composer": "Blacklolita",
+            "illustrator": "釜飯轟々丸 + jht (Design: 祈莲)",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN",
+                    "AT"
+                ],
+                "EZ": {
+                    "rating": 5.5,
+                    "charter": "SeveredEntity (BlindForest vs rN) feat. Δ",
+                    "numOfNotes": 313
+                },
+                "HD": {
+                    "rating": 11.8,
+                    "charter": "Δ (M3d1uM vs Salt)",
+                    "numOfNotes": 801
+                },
+                "IN": {
+                    "rating": 15.2,
+                    "charter": "StupiGGy -The Origin-",
+                    "numOfNotes": 1063
+                },
+                "AT": {
+                    "rating": 15.9,
+                    "charter": "弧光",
+                    "numOfNotes": 1200
+                }
+            }
+        },
         "BRAINHACKER.SOMON.0": {
             "chapterCode": "Single",
             "unlockType": 1,
@@ -4935,6 +5132,186 @@
                 }
             }
         },
+        "Cuvism.Fl00tvsHalv.0": {
+            "chapterCode": "TAKUMI3",
+            "unlockType": 0,
+            "songsName": "Cuvism³",
+            "composer": "Fl00t vs Halv",
+            "illustrator": "sikkari",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN",
+                    "AT"
+                ],
+                "EZ": {
+                    "rating": 3.5,
+                    "charter": "Rikko",
+                    "numOfNotes": 222
+                },
+                "HD": {
+                    "rating": 12.1,
+                    "charter": "Rikko³ [Normal]",
+                    "numOfNotes": 761
+                },
+                "IN": {
+                    "rating": 13.9,
+                    "charter": "Rikko",
+                    "numOfNotes": 830
+                },
+                "AT": {
+                    "rating": 16.4,
+                    "charter": "JKy vs StrayCat",
+                    "numOfNotes": 1088
+                }
+            }
+        },
+        "iLArtifact.Link0.0": {
+            "chapterCode": "TAKUMI3",
+            "unlockType": 0,
+            "songsName": "iL-Artifact",
+            "composer": "Link''0",
+            "illustrator": "Fl00t",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 5.5,
+                    "charter": "IUIsauce",
+                    "numOfNotes": 482
+                },
+                "HD": {
+                    "rating": 10.5,
+                    "charter": "IUIsauce",
+                    "numOfNotes": 925
+                },
+                "IN": {
+                    "rating": 15.5,
+                    "charter": "XMT小咩兔 vs 上班睡大觉_Sleepyhead",
+                    "numOfNotes": 1279
+                }
+            }
+        },
+        "atruthseekerCommunicationwithUtopiawillbelost.kuro.0": {
+            "chapterCode": "TAKUMI3",
+            "unlockType": 0,
+            "songsName": "a truth seeker -Communication with Utopia will be lost-",
+            "composer": "kuro",
+            "illustrator": "rokopon",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 7.5,
+                    "charter": "上班睡大觉_Sleepyhead",
+                    "numOfNotes": 328
+                },
+                "HD": {
+                    "rating": 12.8,
+                    "charter": "上班睡大觉_Sleepyhead",
+                    "numOfNotes": 555
+                },
+                "IN": {
+                    "rating": 15.8,
+                    "charter": "-Seek A Lnside Truth-",
+                    "numOfNotes": 986
+                }
+            }
+        },
+        "幽世桔梗.Capchiifeatまるもこ.0": {
+            "chapterCode": "SHINOBISLASH",
+            "unlockType": 0,
+            "songsName": "幽世桔梗",
+            "composer": "Capchii feat. まるもこ",
+            "illustrator": "瀬名",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 3.0,
+                    "charter": "RipHall vs. Likey",
+                    "numOfNotes": 223
+                },
+                "HD": {
+                    "rating": 10.1,
+                    "charter": "RipHall vs. Likey",
+                    "numOfNotes": 562
+                },
+                "IN": {
+                    "rating": 14.8,
+                    "charter": "Su1fuR、快斬！",
+                    "numOfNotes": 981
+                }
+            }
+        },
+        "千紫万紅.r0yvsWABI.0": {
+            "chapterCode": "SHINOBISLASH",
+            "unlockType": 0,
+            "songsName": "千紫万紅",
+            "composer": "r0y vs. WABI",
+            "illustrator": "中本ひょうり",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 4.5,
+                    "charter": "Rikko",
+                    "numOfNotes": 240
+                },
+                "HD": {
+                    "rating": 12.1,
+                    "charter": "実戦 with Rikko",
+                    "numOfNotes": 779
+                },
+                "IN": {
+                    "rating": 15.6,
+                    "charter": "Salt & Barbarianerman",
+                    "numOfNotes": 1200
+                }
+            }
+        },
+        "明鏡烈火.MUEvsRekuMochizuki.0": {
+            "chapterCode": "SHINOBISLASH",
+            "unlockType": 0,
+            "songsName": "明鏡烈火",
+            "composer": "M-UE vs. Reku Mochizuki",
+            "illustrator": "中本ひょうり",
+            "chartDetail": {
+                "level_list": [
+                    "EZ",
+                    "HD",
+                    "IN"
+                ],
+                "EZ": {
+                    "rating": 6.5,
+                    "charter": "COC  feat. Su1fuR",
+                    "numOfNotes": 376
+                },
+                "HD": {
+                    "rating": 11.3,
+                    "charter": "COC  feat. Su1fuR",
+                    "numOfNotes": 564
+                },
+                "IN": {
+                    "rating": 15.8,
+                    "charter": "Arenn Salty feat. LDA",
+                    "numOfNotes": 888
+                }
+            }
+        },
         "零號車輛.seatrus.0": {
             "chapterCode": "ParadigmReboot",
             "unlockType": 0,
@@ -5054,41 +5431,6 @@
                     "rating": 16.2,
                     "charter": "上班睡大觉_Sleepyhead",
                     "numOfNotes": 1207
-                }
-            }
-        },
-        "テリトリーバトル.ツユ.0": {
-            "chapterCode": "CHUNITHM",
-            "unlockType": 0,
-            "songsName": "テリトリーバトル",
-            "composer": "ツユ",
-            "illustrator": "SEGA (V17AMax modified)",
-            "chartDetail": {
-                "level_list": [
-                    "EZ",
-                    "HD",
-                    "IN",
-                    "AT"
-                ],
-                "EZ": {
-                    "rating": 3.0,
-                    "charter": "返せ！返せ！ボクのSu1fuRを",
-                    "numOfNotes": 172
-                },
-                "HD": {
-                    "rating": 9.1,
-                    "charter": "{^-7-^} BATTLE against Su1fuR",
-                    "numOfNotes": 589
-                },
-                "IN": {
-                    "rating": 13.8,
-                    "charter": "阿爽 and StupiGGy Seizing Territory",
-                    "numOfNotes": 974
-                },
-                "AT": {
-                    "rating": 15.3,
-                    "charter": "JKy feat. 0419_Guardian",
-                    "numOfNotes": 1417
                 }
             }
         },
@@ -6778,5 +7120,5 @@
         }
     },
     "otherSongs": {},
-    "ver": "3.6.0"
+    "ver": "3.8.0"
 }
