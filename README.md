@@ -1,6 +1,5 @@
 # Tomato Phigros Data
 目前来说是phigros的API(代码供参考的API)<br>
-技术支持来自yuhao
 
 <h2>怎么编译</h2>
 
