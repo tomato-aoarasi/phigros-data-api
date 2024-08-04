@@ -83,11 +83,16 @@ public:
 					throw self::HTTPException("", 401, 6);
 				}
 
+				bool enable_ap{ false };
+
+				if (OtherUtil::verifyParam(req, "is_aplist")) {
+					enable_ap = std::stoi(req.url_params.get("is_aplist"));
+				}
 
 				// 设置响应头为 application/json
 
 				// 将 JSON 数据作为响应体返回
-				resp.write(this->m_phigros->getAll(authentication, sessionToken).dump(amount_spaces));
+				resp.write(this->m_phigros->getAll(authentication, sessionToken, enable_ap).dump(amount_spaces));
 
 
 				return resp;

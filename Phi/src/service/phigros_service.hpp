@@ -15,7 +15,7 @@
 class PhigrosService {
 public:
 	virtual ~PhigrosService() = default;
-	virtual Json getAll(const UserData&, std::string_view) = 0;
+	virtual Json getAll(const UserData&, std::string_view, bool) = 0;
 	virtual Json getBest(const UserData&, std::string_view, const std::string& , unsigned char, bool) = 0;
 	virtual Json getRecords(const UserData&, std::string_view) = 0;
 

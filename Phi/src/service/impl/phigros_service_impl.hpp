@@ -127,7 +127,7 @@ private:
 	}
 public:
 	virtual ~PhigrosServiceImpl() = default;
-	Json getAll(const UserData& authentication, std::string_view sessionToken) override {
+	Json getAll(const UserData& authentication, std::string_view sessionToken, bool enable_ap) override {
 
 		Json data;
 
@@ -259,12 +259,42 @@ public:
 				j["illustrationPath"] = value.song_illustration_path;
 			}
 
-			//res.emplace_back(std::move());
 			data["content"]["best_list"]["phi"] = j;
 			//std::cout << "\n=====================\n";
 			if (count >= 1)break;
 		}
+		count = 0;
+		Json ap_list{};
+		if (enable_ap){
+			for (const auto& [key, value] : singlePhi) {
+				++count;
+				Json j{
+					{"ranking", count},
+					{"acc", value.acc},
+					{"rankingScore", value.rks},
+					{"score", value.score},
+					{"difficulty", value.difficulty},
+					{"title", value.title},
+					{"isfc", value.is_fc},
+					{"level", value.level},
+					{"songid", value.sid}
+				};
 
+				if (authentication.authority == 5)
+				{
+					j["id"] = value.id;
+					j["illustrationPath"] = value.song_illustration_path;
+				}
+
+				//res.emplace_back(std::move());
+				ap_list.emplace_back(j);
+			}
+			{
+				auto& best_list_phis{ data["content"]["best_list"]["phis"] };
+				best_list_phis = ap_list;
+				if (best_list_phis.is_null()) best_list_phis = Json::parse("[]");
+			}
+		}
 
 		count = 0;
 		for (const auto& [key, value] : rksSort) {
@@ -290,7 +320,11 @@ public:
 			res.emplace_back(std::move(j));
 			//if (count >= 19)break;
 		}
-		data["content"]["best_list"]["best"] = std::move(res);
+		{
+			auto& best_list_all{ data["content"]["best_list"]["best"] };
+			best_list_all = std::move(res);
+			if (best_list_all.is_null()) best_list_all = Json::parse("[]");
+		}
 		data["content"]["best_list"]["is_phi"] = singlePhi.size() > 0;
 		data["status"] = 0;
 		return data;
@@ -433,10 +467,11 @@ public:
 			throw self::HTTPException("Record doesn't exist", 404, 9);
 		}
 
+		Json record_data{};
+
 		SQL_Util::PlayerRdDB << "select sid,rks,challengeModeRank,timestamp,nickname from \"" + st + "\";"
 			>> [&](uint32_t sid, double rks, uint16_t challengeModeRank, std::time_t timestamp, std::string nickname) {
-
-			data["content"]["data"].emplace_back(
+			record_data.emplace_back(
 				Json{
 				  {"sid", sid},
 				  {"rks", rks},
@@ -445,6 +480,12 @@ public:
 				  {"nickname", nickname},
 				});
 			};
+
+		{
+			auto& cont_record_data{ data["content"]["data"] };
+			cont_record_data = record_data;
+			if (cont_record_data.is_null())cont_record_data  = Json::parse("[]");
+		}
 
 		std::string statisticalChallengeModeRankDataSQL{ std::format(R"(
 SELECT 
