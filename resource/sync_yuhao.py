@@ -61,11 +61,11 @@ if __name__ == "__main__":
             
         if not conditionArtist:
             print(f'[{sid}] 曲师错误')
-            print(f'{conditionArtist}\n{info["artist"]}\n')
+            print(f'{conditionArtist}\n{info["composer"]}\n')
             
         if not conditionIllustration:
             print(f'[{sid}] 画师错误')
-            print(f'{illustrator}\n{info["illustration"]}\n')
+            print(f'{illustrator}\n{info["illustrator"]}\n')
             
         for index in range(len(info_ratings)):
             level = level_list[index]

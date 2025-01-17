@@ -35,7 +35,7 @@
 
 using ubyte = unsigned char;
 
-#if 1
+#if 0
 void HexDebug(const auto& content) {
 	std::uint32_t hits{ 0 };
 	for (const auto& data : content)
@@ -201,10 +201,10 @@ namespace self {
 			std::time_t timestamp;
 			float RankingScore;
 			uint16_t ChallengeModeRank;
-			std::vector<uint8_t> EZ;
-			std::vector<uint8_t> HD;
-			std::vector<uint8_t> IN;
-			std::vector<uint8_t> AT;
+			std::vector<uint16_t> EZ;
+			std::vector<uint16_t> HD;
+			std::vector<uint16_t> IN;
+			std::vector<uint16_t> AT;
 			std::string nickname;
 
 			CloudSaveSummary(std::string Summary, std::string UpdateTime, std::string nickname) {
@@ -274,11 +274,45 @@ namespace self {
 				//std::cout << "size: " << summary.size() << std::endl;
 				size_t size{ summary.size() }, byte_position{ size - 26 };
 
-				//HexDebug(summary);
-				EZ = { summary[byte_position += 2], summary[byte_position += 2], summary[byte_position += 2] };
-				HD = { summary[byte_position += 2], summary[byte_position += 2], summary[byte_position += 2] };
-				IN = { summary[byte_position += 2], summary[byte_position += 2], summary[byte_position += 2] };
-				AT = { summary[byte_position += 2], summary[byte_position += 2], summary[byte_position += 2] };
+				// HexDebug(summary);
+
+				byte_position += 2;
+
+				// EZ
+				for (size_t i = 0; i < 3; ++i)
+				{
+					uint16_t low_byte = summary[byte_position++];
+					uint16_t high_byte = summary[byte_position++];
+					uint16_t ez{ static_cast<uint16_t>((high_byte << 8) | low_byte) };
+					EZ.push_back(ez);
+				}
+
+				// HD
+				for (size_t i = 0; i < 3; ++i)
+				{
+					uint16_t low_byte = summary[byte_position++];
+					uint16_t high_byte = summary[byte_position++];
+					uint16_t hd{ static_cast<uint16_t>((high_byte << 8) | low_byte) };
+					HD.push_back(hd);
+				}
+
+				// IN
+				for (size_t i = 0; i < 3; ++i)
+				{
+					uint16_t low_byte = summary[byte_position++];
+					uint16_t high_byte = summary[byte_position++];
+					uint16_t in{ static_cast<uint16_t>((high_byte << 8) | low_byte) };
+					IN.push_back(in);
+				}
+
+				// AT
+				for (size_t i = 0; i < 3; ++i)
+				{
+					uint16_t low_byte = summary[byte_position++];
+					uint16_t high_byte = summary[byte_position++];
+					uint16_t at{ static_cast<uint16_t>((high_byte << 8) | low_byte) };
+					AT.push_back(at);
+				}
 
 				std::tm tm = {};
 				std::istringstream ss(UpdateTime);
@@ -607,23 +641,26 @@ namespace self {
 			httplib::Error err{ httplib::Error::Success };
 
 			m_headers.insert({ "X-LC-Session", m_sessionToken });
-			httplib::Client cli(URL);
+			web::http::client::http_client client(U(URL));
 
 			try{
 				// 异步获取玩家自己信息的JSON
 				std::future<void> get_player_info_thread = std::async(std::launch::async, [&] {
-					auto res = cli.Get(ME_URI, m_headers);
+					web::http::http_request request_add_index(web::http::methods::GET);
+					request_add_index.set_request_uri(ME_URI);
+					for (auto& [key, value] : m_headers) {
+						request_add_index.headers().add(key, value);
+					}
+					auto response = client.request(request_add_index).get();
 
-					//std::cout << httplib::to_string(res.error()) << std::endl;
-					if (res.error() != httplib::Error::Success) {
-						throw HTTPException(httplib::to_string(err), 500, 1);
+					auto resp_status_code{ response.status_code() };
+
+					if (resp_status_code == 200) {
+						this->m_nickname = Json::parse(response.extract_json().get().serialize())["nickname"].get<std::string>();
 					}
-					else if (res && res->status == 200) {
-						this->m_nickname = Json::parse(res->body)["nickname"].get<std::string>();
-					}
-					else if (res->status < 500 && res->status >= 400) {
+					else if (resp_status_code < 500 && resp_status_code >= 400) {
 						uint16_t status_code = 1;
-						switch (res->status)
+						switch (resp_status_code)
 						{
 						case 400:
 							status_code = 4;
@@ -631,19 +668,23 @@ namespace self {
 						default:
 							break;
 						}
-						throw HTTPException("", res->status, status_code);
+						throw HTTPException("", resp_status_code, status_code);
 					}
 					else {
-						throw HTTPException(httplib::to_string(res.error()), 500, 1);
+						throw HTTPException(""s, 500, 1);
 					}
 					});
 
+				web::http::http_request request_add_index(web::http::methods::GET);
+				request_add_index.set_request_uri(GAME_SAVE_URI);
+				for (auto& [key, value] : m_headers) {
+					request_add_index.headers().add(key, value);
+				}
+				auto response = client.request(request_add_index).get();
+				auto resp_status_code{ response.status_code() };
 				// 获取玩家存档的JSON
-				auto res{ cli.Get(GAME_SAVE_URI, m_headers) };
-				if (res.error() != httplib::Error::Success) {
-					throw HTTPException(httplib::to_string(err), 500, 1);
-				} else if (res && res->status == 200) {
-					this->m_game_save_info = Json::parse(res->body);
+				if (resp_status_code == 200) {
+					this->m_game_save_info = Json::parse(response.extract_json().get().serialize());
 					this->m_game_save_info.swap(this->m_game_save_info["results"][0]);
 
 					// ======================================================================
@@ -653,7 +694,7 @@ namespace self {
 					this->m_saveModel.gameObjectId = this->m_game_save_info["gameFile"]["objectId"].get<std::string>();
 					this->m_saveModel.checksum = this->m_game_save_info["gameFile"]["metaData"]["_checksum"].get<std::string>();
 				} else {
-					throw HTTPException(httplib::to_string(res.error()), 500, 1);
+					throw HTTPException(""s, 500, 1);
 				}
 
 				get_player_info_thread.get();
