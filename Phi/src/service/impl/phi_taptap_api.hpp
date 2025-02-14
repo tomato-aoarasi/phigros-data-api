@@ -422,13 +422,13 @@ namespace self {
 
 			// std::cout << "songcount" << songcount << std::endl;
 
-			auto fc{ reader.ReadByte() };
+			// auto fc{ reader.ReadByte() };
 
 			for (size_t i = 0; i < songcount; ++i) {
 				auto songid{ reader.ReadStr() };
 				auto length{ reader.ReadByte() };
 				auto diffs{ reader.ReadByte() };
-				fc = reader.ReadByte();
+				auto fc = reader.ReadByte();
 
 				//std::cout << songid << "\n";
 
