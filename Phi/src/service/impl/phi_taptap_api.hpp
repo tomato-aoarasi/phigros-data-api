@@ -399,16 +399,70 @@ namespace self {
 		}
 
 		void getGameRecord(std::vector<ubyte>& data) {
+			const std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
 			size_t data_size{ data.size() };
 			std::unordered_map<std::string, std::unordered_map<ubyte, SongScore>> records;
+			BinaryReader reader(data);
 
+			uint16_t songcount{ 0 };
+			{
+				std::vector<uint8_t> buffer;
+				uint8_t varint_data_1{ reader.ReadByte() };
+				if (varint_data_1 < 0x80) {
+					buffer.push_back(varint_data_1);
+				}
+				else {
+					uint8_t varint_data_2{ reader.ReadByte() };
+					buffer.push_back(varint_data_1);
+					buffer.push_back(varint_data_2);
+				}
+				const uint8_t* buffer_data = buffer.data();
+				songcount = OtherUtil::Varint::read(&buffer_data);
+			}
+
+			// std::cout << "songcount" << songcount << std::endl;
+
+			auto fc{ reader.ReadByte() };
+
+			for (size_t i = 0; i < songcount; ++i) {
+				auto songid{ reader.ReadStr() };
+				auto length{ reader.ReadByte() };
+				auto diffs{ reader.ReadByte() };
+				fc = reader.ReadByte();
+
+				//std::cout << songid << "\n";
+
+				std::unordered_map<ubyte, SongScore> record;
+				for (size_t j = 0; j < 5; ++j) {
+					if (reader.getBit(diffs, j)) {
+						SongScore song_score;
+						song_score.score = reader.ReadInt32();
+						song_score.acc = reader.ReadSingle();
+						song_score.is_fc = reader.getBit(fc, j);
+						song_score.difficulty = levels[j];
+						record[j] = std::move(song_score);
+					}
+				}
+
+				// std::cout << "songid:" << songid << "list:" << i << "/" << songcount << std::endl;
+				if (reader.getPosition() > data_size) {
+					break;
+					// records.clear();
+
+					// std::cout << "Binary data read out of bounds\n";
+					// continue;
+					// throw std::out_of_range("Binary data read out of bounds");
+				}
+
+				records[songid] = std::move(record);
+			}
+			/*
 			try{
 				BinaryReader reader(data);
 				auto songcount{ reader.ReadByte() };
 				auto fc{ reader.ReadByte() };
 
 				for (size_t i = 0; i < songcount; ++i) {
-					const std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
 					auto songid{ reader.ReadStr() };
 					auto length{ reader.ReadByte() };
 					auto diffs{ reader.ReadByte() };
@@ -443,7 +497,6 @@ namespace self {
 				auto songcount{ reader.ReadByte() };
 
 				for (size_t i = 0; i < songcount; ++i) {
-					std::string levels[]{ "EZ", "HD", "IN", "AT", "Legacy" };
 					auto songid{ reader.ReadStr() };
 					auto length{ reader.ReadByte() };
 					auto diffs{ reader.ReadByte() };
@@ -469,7 +522,7 @@ namespace self {
 
 					records[songid] = std::move(record);
 				}
-			}
+			}*/
 
 			//std::cout << "data size: " << data_size << ",position: " << reader.getPosition() << std::endl;
 			this->m_player_record = std::move(records);
