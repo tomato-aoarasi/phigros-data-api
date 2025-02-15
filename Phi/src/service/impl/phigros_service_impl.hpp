@@ -184,6 +184,7 @@ public:
 			data["content"]["other"]["avatar"] = avatar_id;
 			data["content"]["other"]["background"] = playerData.background;
 			data["content"]["other"]["profile"] = playerData.profile;
+			data["content"]["other"]["unlockedMusicCount"] = playerData.unlocked_count;
 
 			for (size_t index{ 0 }; index < disk_capacity_unit.size(); ++index) {
 				data["content"]["other"]["data"][disk_capacity_unit.at(index)] = phiAPI.getGameProgress().data.at(index);

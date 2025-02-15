@@ -182,6 +182,7 @@ namespace self {
 
 	struct UserData {
 		std::string profile{}, avatar{}, background{};
+		uint16_t unlocked_count{ 0 };
 	};
 
 	struct SaveModel {
@@ -419,6 +420,7 @@ namespace self {
 				const uint8_t* buffer_data = buffer.data();
 				songcount = OtherUtil::Varint::read(&buffer_data);
 			}
+			m_user_data.unlocked_count;
 
 			// std::cout << "songcount" << songcount << std::endl;
 
